@@ -522,6 +522,7 @@ input, textarea, select { font-family: var(--font); }
 [data-theme="dark"] .poll-container { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); }
 .poll-question { font-weight: 700; font-size: 1.05rem; text-align: center; }
 .qr-canvas-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.qr-canvas-wrapper canvas { border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); }
 .qr-label { font-size: 0.8rem; color: var(--color-text-muted); }
 .poll-results { width: 100%; }
 .poll-bar-row {
@@ -2257,8 +2258,12 @@ document.addEventListener('keydown', e => {
 
 // ===================== QR CODES =====================
 function generateQR(canvasId, url) {
+  console.log('Generating QR for ' + canvasId + ' with URL ' + url);
   const el = document.getElementById(canvasId);
-  if (!el) return;
+  if (!el) {
+    console.log('Element not found for ' + canvasId);
+    return;
+  }
   el.innerHTML = '';
   new QRCode(el, {
     text: url,
@@ -2268,6 +2273,7 @@ function generateQR(canvasId, url) {
     colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.M
   });
+  console.log('QR generated for ' + canvasId);
 }
 
 function getBaseUrl() {
@@ -2327,7 +2333,7 @@ function createCarousels() {
       // Add QR
       const qrWrapper = document.createElement('div');
       qrWrapper.className = 'qr-canvas-wrapper';
-      qrWrapper.innerHTML = `<canvas id="qr-${parentId}" aria-label="QR code to vote on ${parentId} polls"></canvas><span class="qr-label">Scan to vote on all polls</span>`;
+      qrWrapper.innerHTML = `<canvas id="qr-${parentId}" width="160" height="160" aria-label="QR code to vote on ${parentId} polls"></canvas><span class="qr-label">Scan to vote on all polls</span>`;
       carousel.appendChild(qrWrapper);
       generateQRForParent(parentId);
 
@@ -2340,7 +2346,7 @@ function createCarousels() {
       // Single poll, add QR
       const qrWrapper = document.createElement('div');
       qrWrapper.className = 'qr-canvas-wrapper';
-      qrWrapper.innerHTML = `<canvas id="qr-${parentId}" aria-label="QR code to vote on ${parentId} poll"></canvas><span class="qr-label">Scan to vote on your phone</span>`;
+      qrWrapper.innerHTML = `<canvas id="qr-${parentId}" width="160" height="160" aria-label="QR code to vote on ${parentId} poll"></canvas><span class="qr-label">Scan to vote on your phone</span>`;
       polls[0].appendChild(qrWrapper);
       generateQRForParent(parentId);
     }
