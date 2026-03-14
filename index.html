@@ -2224,9 +2224,8 @@ function getBaseUrl() {
 }
 
 window.addEventListener('load', () => {
-  const base = getBaseUrl();
-  generateQR('qr-icebreaker', base + '/poll?q=icebreaker');
-  generateQR('qr-timesink', base + '/poll?q=timesink');
+  generateQRForPoll('icebreaker');
+  generateQRForPoll('timesink');
 });
 
 const JSONBIN_KEY = '$2a$10$1EqKTRcr.19M6BuFq5AdP.Fz7oLxGWxaeI7s75rettOLqBRUeXwr2';
@@ -2244,28 +2243,83 @@ async function fetchPollData() {
   }
 }
 
-async function updatePollResults(pollId, keys) {
-  const data = await fetchPollData();
-  if (!data) return;
-  const pollData = data['workshopPoll_' + pollId] || {};
-  const total = keys.reduce((sum, k) => sum + (pollData[k] || 0), 0);
-  keys.forEach(k => {
-    const count = pollData[k] || 0;
+function generatePollHTML(pollId, question, options) {
+  const container = document.createElement('div');
+  container.className = 'poll-container';
+  container.id = `poll-${pollId}-container`;
+  const optionsHTML = options.map(opt => `
+    <div class="poll-bar-row">
+      <span class="poll-bar-label">${opt}</span>
+      <div class="poll-bar-track"><div class="poll-bar-fill" id="bar-${pollId}-${opt}"></div></div>
+      <span class="poll-bar-count" id="count-${pollId}-${opt}">0</span>
+    </div>
+  `).join('');
+  container.innerHTML = `
+    <div class="poll-question">🗳️ ${question}</div>
+    <div class="qr-canvas-wrapper">
+      <div id="qr-${pollId}" aria-label="QR code to vote on ${pollId} poll"></div>
+      <span class="qr-label">Scan to vote on your phone</span>
+    </div>
+    <div class="poll-results" id="results-${pollId}" aria-live="polite" aria-label="Live poll results">
+      ${optionsHTML}
+    </div>
+  `;
+  return container;
+}
+
+async function updatePollResults(pollId, pollData) {
+  const options = pollData.options ? Object.keys(pollData.options) : Object.keys(pollData);
+  const optionData = pollData.options || pollData;
+  const total = options.reduce((sum, k) => sum + (optionData[k] || 0), 0);
+  options.forEach(k => {
+    const count = optionData[k] || 0;
     const pct = total > 0 ? (count / total) * 100 : 0;
     const bar = document.getElementById('bar-' + pollId + '-' + k);
     const cnt = document.getElementById('count-' + pollId + '-' + k);
     if (bar) bar.style.width = pct + '%';
     if (cnt) cnt.textContent = count;
   });
+  if (pollData.question) {
+    const questionEl = document.querySelector(`#poll-${pollId}-container .poll-question`);
+    if (questionEl) {
+      questionEl.textContent = `🗳️ ${pollData.question}`;
+    }
+  }
 }
 
 function startPollPolling() {
-  updatePollResults('icebreaker', ['never', 'occasionally', 'daily']);
-  updatePollResults('timesink', ['writing', 'research', 'reporting', 'planning']);
+  fetchPollData().then(data => {
+    if (!data) return;
+    const knownPolls = ['icebreaker', 'timesink'];
+    Object.keys(data).forEach(pollKey => {
+      if (pollKey.startsWith('workshopPoll_')) {
+        const pollId = pollKey.replace('workshopPoll_', '');
+        const pollData = data[pollKey];
+        if (!knownPolls.includes(pollId)) {
+          const options = pollData.options ? Object.keys(pollData.options) : Object.keys(pollData);
+          const container = generatePollHTML(pollId, pollData.question || 'New Poll', options);
+          document.getElementById('additional-polls-container').appendChild(container);
+        }
+        updatePollResults(pollId, pollData);
+        generateQRForPoll(pollId);
+      }
+    });
+  });
   setInterval(() => {
-    updatePollResults('icebreaker', ['never', 'occasionally', 'daily']);
-    updatePollResults('timesink', ['writing', 'research', 'reporting', 'planning']);
+    fetchPollData().then(data => {
+      if (!data) return;
+      Object.keys(data).forEach(pollKey => {
+        if (pollKey.startsWith('workshopPoll_')) {
+          const pollId = pollKey.replace('workshopPoll_', '');
+          updatePollResults(pollId, data[pollKey]);
+        }
+      });
+    });
   }, 5000);
+}
+
+function generateQRForPoll(pollId) {
+  generateQR(`qr-${pollId}`, getBaseUrl() + `/poll.html?poll=${pollId}`);
 }
 startPollPolling();
 
@@ -2463,5 +2517,6 @@ function escapeHtml(str) {
   return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
+<div id="additional-polls-container"></div>
 </body>
 </html>

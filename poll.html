@@ -221,7 +221,7 @@ function getParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
-const pollId = getParam('q') || 'icebreaker';
+const pollId = getParam('poll') || 'icebreaker';
 const poll = POLLS[pollId] || POLLS['icebreaker'];
 
 document.getElementById('poll-question').textContent = poll.question;

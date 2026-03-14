@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add New Poll - AI Workshop</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+    .options { margin-top: 10px; }
+    .option-input { margin-bottom: 10px; }
+    button { background: #007acc; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+    button:hover { background: #005aa3; }
+    .back-link { display: inline-block; margin-top: 20px; color: #007acc; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1>Add New Poll Question</h1>
+  <form id="add-poll-form">
+    <div class="form-group">
+      <label for="poll-id">Poll ID (unique identifier, e.g., workshopPoll_feedback):</label>
+      <input type="text" id="poll-id" required placeholder="workshopPoll_">
+    </div>
+    <div class="form-group">
+      <label for="question">Question Text:</label>
+      <textarea id="question" required placeholder="What is your favorite AI tool?"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Options (2-4 options):</label>
+      <div class="options" id="options-container">
+        <div class="option-input">
+          <input type="text" placeholder="Option 1" required>
+        </div>
+        <div class="option-input">
+          <input type="text" placeholder="Option 2" required>
+        </div>
+      </div>
+      <button type="button" id="add-option">Add Another Option</button>
+    </div>
+    <button type="submit">Create Poll</button>
+  </form>
+  <a href="index.html" class="back-link">← Back to Workshop</a>
+
+  <script>
+    const JSONBIN_KEY = '$2a$10$1EqKTRcr.19M6BuFq5AdP.Fz7oLxGWxaeI7s75rettOLqBRUeXwr2';
+    const JSONBIN_BIN = '69b547d4aa77b81da9e3943d';
+
+    document.getElementById('add-option').addEventListener('click', () => {
+      const container = document.getElementById('options-container');
+      if (container.children.length < 4) {
+        const div = document.createElement('div');
+        div.className = 'option-input';
+        div.innerHTML = '<input type="text" placeholder="Option ' + (container.children.length + 1) + '" required>';
+        container.appendChild(div);
+      }
+    });
+
+    document.getElementById('add-poll-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pollId = document.getElementById('poll-id').value;
+      const question = document.getElementById('question').value;
+      const options = Array.from(document.querySelectorAll('#options-container input')).map(input => input.value);
+
+      if (!pollId.startsWith('workshopPoll_')) {
+        alert('Poll ID must start with "workshopPoll_"');
+        return;
+      }
+
+      try {
+        // Fetch current data
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}/latest`);
+        const json = await res.json();
+        const currentData = json.record || {};
+
+        // Add new poll
+        const pollData = {};
+        options.forEach(opt => pollData[opt.toLowerCase().replace(/\s+/g, '')] = 0);
+        currentData[pollId] = pollData;
+
+        // Update bin
+        const updateRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': JSONBIN_KEY
+          },
+          body: JSON.stringify(currentData)
+        });
+
+        if (updateRes.ok) {
+          alert('Poll created successfully!');
+          window.location.href = 'index.html';
+        } else {
+          alert('Failed to create poll');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error creating poll');
+      }
+    });
+  </script>
+</body>
+</html>
