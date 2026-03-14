@@ -2234,9 +2234,7 @@ const JSONBIN_BIN = '69b547d4aa77b81da9e3943d';
 
 async function fetchPollData() {
   try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}/latest`, {
-      headers: { 'X-Master-Key': JSONBIN_KEY }
-    });
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}/latest`);
     const json = await res.json();
     console.log('Fetched poll data:', json.record);
     return json.record;
@@ -2267,7 +2265,7 @@ function startPollPolling() {
   setInterval(() => {
     updatePollResults('icebreaker', ['never', 'occasionally', 'daily']);
     updatePollResults('timesink', ['writing', 'research', 'reporting', 'planning']);
-  }, 3000);
+  }, 5000);
 }
 startPollPolling();
 
