@@ -2247,13 +2247,16 @@ function generatePollHTML(pollId, question, options) {
   const container = document.createElement('div');
   container.className = 'poll-container';
   container.id = `poll-${pollId}-container`;
-  const optionsHTML = options.map(opt => `
+  const optionsHTML = options.map(opt => {
+    const safeId = opt.replace(/\s+/g, '-').toLowerCase();
+    const displayLabel = opt.charAt(0).toUpperCase() + opt.slice(1);
+    return `
     <div class="poll-bar-row">
-      <span class="poll-bar-label">${opt}</span>
-      <div class="poll-bar-track"><div class="poll-bar-fill" id="bar-${pollId}-${opt}"></div></div>
-      <span class="poll-bar-count" id="count-${pollId}-${opt}">0</span>
+      <span class="poll-bar-label">${displayLabel}</span>
+      <div class="poll-bar-track"><div class="poll-bar-fill" id="bar-${pollId}-${safeId}"></div></div>
+      <span class="poll-bar-count" id="count-${pollId}-${safeId}">0</span>
     </div>
-  `).join('');
+  `;}).join('');
   container.innerHTML = `
     <div class="poll-question">🗳️ ${question}</div>
     <div class="qr-canvas-wrapper">
@@ -2274,8 +2277,9 @@ async function updatePollResults(pollId, pollData) {
   options.forEach(k => {
     const count = optionData[k] || 0;
     const pct = total > 0 ? (count / total) * 100 : 0;
-    const bar = document.getElementById('bar-' + pollId + '-' + k);
-    const cnt = document.getElementById('count-' + pollId + '-' + k);
+    const safeId = k.replace(/\s+/g, '-').toLowerCase();
+    const bar = document.getElementById('bar-' + pollId + '-' + safeId);
+    const cnt = document.getElementById('count-' + pollId + '-' + safeId);
     if (bar) bar.style.width = pct + '%';
     if (cnt) cnt.textContent = count;
   });

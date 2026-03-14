@@ -188,57 +188,37 @@ html, body {
 </div>
 
 <script>
-const POLLS = {
-  icebreaker: {
-    question: "How much AI do you currently use?",
-    options: [
-      { key: 'never',        label: '🙈 Never',       btnClass: 'btn-blue' },
-      { key: 'occasionally', label: '🤔 Occasionally', btnClass: 'btn-purple' },
-      { key: 'daily',        label: '🚀 Daily',        btnClass: 'btn-green' }
-    ]
-  },
-  timesink: {
-    question: "Which of these tasks takes most of your time?",
-    options: [
-      { key: 'writing',   label: '📝 Writing',   btnClass: 'btn-blue' },
-      { key: 'research',  label: '🔍 Research',  btnClass: 'btn-purple' },
-      { key: 'reporting', label: '📊 Reporting', btnClass: 'btn-pink' },
-      { key: 'planning',  label: '📅 Planning',  btnClass: 'btn-orange' }
-    ]
-  },
-  spaces: {
-    question: "Which use case interests you most for Spaces?",
-    options: [
-      { key: 'planning', label: '📅 Content Planning', btnClass: 'btn-blue' },
-      { key: 'grants',   label: '💰 Grant Writing',    btnClass: 'btn-green' },
-      { key: 'pcb',      label: '🔌 PCB / Technical',  btnClass: 'btn-purple' },
-      { key: 'social',   label: '📱 Social Media',     btnClass: 'btn-pink' }
-    ]
-  }
-};
-
 function getParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
 const pollId = getParam('poll') || 'icebreaker';
-const poll = POLLS[pollId] || POLLS['icebreaker'];
 
-document.getElementById('poll-question').textContent = poll.question;
-
-const optionsList = document.getElementById('options-list');
-poll.options.forEach(opt => {
-  const btn = document.createElement('button');
-  btn.className = 'option-btn ' + opt.btnClass;
-  btn.textContent = opt.label;
-  btn.setAttribute('role', 'listitem');
-  btn.setAttribute('aria-label', 'Vote for: ' + opt.label.replace(/[^\w\s]/gi, ''));
-  btn.addEventListener('click', () => {
-    btn.disabled = true; // Prevent double voting
-    castVote(opt.key, opt.label);
+(async () => {
+  const data = await fetchPollData();
+  const pollData = data[`workshopPoll_${pollId}`];
+  if (!pollData) {
+    document.getElementById('poll-question').textContent = 'Poll not found';
+    return;
+  }
+  const question = pollData.question || 'Poll';
+  document.getElementById('poll-question').textContent = question;
+  const options = pollData.options ? Object.keys(pollData.options) : Object.keys(pollData);
+  const optionsList = document.getElementById('options-list');
+  const btnClasses = ['btn-blue', 'btn-green', 'btn-purple', 'btn-pink', 'btn-orange', 'btn-teal'];
+  options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn ' + (btnClasses[i % btnClasses.length]);
+    btn.textContent = opt.charAt(0).toUpperCase() + opt.slice(1);
+    btn.setAttribute('role', 'listitem');
+    btn.setAttribute('aria-label', 'Vote for: ' + opt);
+    btn.addEventListener('click', () => {
+      btn.disabled = true;
+      castVote(opt, opt.charAt(0).toUpperCase() + opt.slice(1));
+    });
+    optionsList.appendChild(btn);
   });
-  optionsList.appendChild(btn);
-});
+})();
 
 const JSONBIN_KEY = '$2a$10$1EqKTRcr.19M6BuFq5AdP.Fz7oLxGWxaeI7s75rettOLqBRUeXwr2';
 const JSONBIN_BIN = '69b547d4aa77b81da9e3943d';

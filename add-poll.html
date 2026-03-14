@@ -77,9 +77,7 @@
 
         // Add new poll
         const pollData = {};
-        options.forEach(opt => pollData[opt.toLowerCase().replace(/\s+/g, '')] = 0);
-        currentData[pollId] = pollData;
-
+      options.forEach(opt => pollData[opt] = 0);
         // Update bin
         const updateRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}`, {
           method: 'PUT',
