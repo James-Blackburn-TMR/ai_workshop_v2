@@ -2238,8 +2238,12 @@ async function fetchPollData() {
       headers: { 'X-Master-Key': JSONBIN_KEY }
     });
     const json = await res.json();
+    console.log('Fetched poll data:', json.record);
     return json.record;
-  } catch(e) { return null; }
+  } catch(e) {
+    console.error('Failed to fetch poll data:', e);
+    return null;
+  }
 }
 
 async function updatePollResults(pollId, keys) {

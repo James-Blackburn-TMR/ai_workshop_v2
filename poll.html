@@ -256,10 +256,12 @@ async function fetchPollData() {
 async function castVote(key, label) {
   try {
     const current = await fetchPollData();
+    console.log('Current data before vote:', current);
     const pollData = current['workshopPoll_' + pollId] || {};
     pollData[key] = (pollData[key] || 0) + 1;
     current['workshopPoll_' + pollId] = pollData;
-    await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}`, {
+    console.log('Data to save:', current);
+    const putRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -267,11 +269,18 @@ async function castVote(key, label) {
       },
       body: JSON.stringify(current)
     });
-    const name = document.getElementById('nickname-input').value.trim();
-    showThankYou(name, label);
-    fireConfetti();
+    console.log('PUT response status:', putRes.status);
+    if (putRes.ok) {
+      const name = document.getElementById('nickname-input').value.trim();
+      showThankYou(name, label);
+      fireConfetti();
+    } else {
+      console.error('PUT failed:', await putRes.text());
+      // Re-enable buttons
+      document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = false);
+    }
   } catch(e) {
-    console.error('Vote failed', e);
+    console.error('Vote failed:', e);
     // Re-enable buttons on error
     document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = false);
   }
