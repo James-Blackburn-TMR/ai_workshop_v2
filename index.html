@@ -2265,15 +2265,15 @@ function generateQR(canvasId, url) {
     return;
   }
   el.innerHTML = '';
-  new QRCode(el, {
-    text: url,
-    width: 160,
-    height: 160,
-    colorDark: '#1a1a1a',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
-  console.log('QR generated for ' + canvasId);
+  // new QRCode(el, {
+  //   text: url,
+  //   width: 160,
+  //   height: 160,
+  //   colorDark: '#1a1a1a',
+  //   colorLight: '#ffffff',
+  //   correctLevel: QRCode.CorrectLevel.M
+  // });
+  console.log('QR generation commented out for ' + canvasId);
 }
 
 function getBaseUrl() {
