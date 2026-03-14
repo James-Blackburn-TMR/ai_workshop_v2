@@ -2294,7 +2294,7 @@ function createCarousels() {
       polls.forEach(poll => {
         const slide = document.createElement('div');
         slide.className = 'carousel-slide';
-        slide.appendChild(poll);
+        slide.appendChild(poll.cloneNode(true)); // clone to avoid moving originals
         wrapper.appendChild(slide);
       });
       carousel.appendChild(wrapper);
@@ -2333,6 +2333,9 @@ function createCarousels() {
 
       // Replace the first poll with the carousel
       polls[0].parentNode.replaceChild(carousel, polls[0]);
+      for (let i = 1; i < polls.length; i++) {
+        polls[i].remove();
+      }
       // Single poll, add QR
       const qrWrapper = document.createElement('div');
       qrWrapper.className = 'qr-canvas-wrapper';
