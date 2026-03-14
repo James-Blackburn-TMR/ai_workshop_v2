@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Accelerating Work with AI — Workshop</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- QRCode.js loaded at end of body for reliability -->
 <style>
 /* ===================== DESIGN TOKENS ===================== */
 :root {
@@ -2033,8 +2033,6 @@ Then create a prioritised daily schedule for the week.</div>
   </div>
 </section>
 
-</div><!-- end .page-wrapper -->
-
 <!-- CONTROL PANEL -->
 <div id="control-panel" role="toolbar" aria-label="Workshop controls">
   <button class="ctrl-btn" id="btn-dark-mode" onclick="toggleDarkMode()" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
@@ -2056,6 +2054,8 @@ Then create a prioritised daily schedule for the week.</div>
   </div>
 </div>
 
+<!-- Move QRCode.js to end of body for reliability -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 // ===================== DEBUG: Confirm JS is running =====================
 alert('Workshop JS loaded');
