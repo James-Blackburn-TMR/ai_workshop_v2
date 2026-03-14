@@ -223,7 +223,6 @@ function getParam(name) {
 
 const pollId = getParam('q') || 'icebreaker';
 const poll = POLLS[pollId] || POLLS['icebreaker'];
-const storageKey = 'workshopPoll_' + pollId;
 
 document.getElementById('poll-question').textContent = poll.question;
 
@@ -234,12 +233,15 @@ poll.options.forEach(opt => {
   btn.textContent = opt.label;
   btn.setAttribute('role', 'listitem');
   btn.setAttribute('aria-label', 'Vote for: ' + opt.label.replace(/[^\w\s]/gi, ''));
-  btn.addEventListener('click', () => castVote(opt.key, opt.label));
+  btn.addEventListener('click', () => {
+    btn.disabled = true; // Prevent double voting
+    castVote(opt.key, opt.label);
+  });
   optionsList.appendChild(btn);
 });
 
-const JSONBIN_KEY = '$2a$10$hGdt81TjCOw.VBkX9ILbNOkyfoaXto.aBxxUpgnAMQ4HHA0Em0lYe';
-const JSONBIN_BIN = '69b5337aaa77b81da9e357be';
+const JSONBIN_KEY = 'YOUR_KEY_HERE';
+const JSONBIN_BIN = 'YOUR_BIN_ID_HERE';
 
 async function fetchPollData() {
   try {
@@ -251,10 +253,12 @@ async function fetchPollData() {
   } catch(e) { return {}; }
 }
 
-async function updatePollData(pollId, data) {
+async function castVote(key, label) {
   try {
     const current = await fetchPollData();
-    current['workshopPoll_' + pollId] = data;
+    const pollData = current['workshopPoll_' + pollId] || {};
+    pollData[key] = (pollData[key] || 0) + 1;
+    current['workshopPoll_' + pollId] = pollData;
     await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}`, {
       method: 'PUT',
       headers: {
@@ -263,18 +267,14 @@ async function updatePollData(pollId, data) {
       },
       body: JSON.stringify(current)
     });
-  } catch(e) { console.error('Failed to update poll data', e); }
-}
-
-function castVote(key, label) {
-  const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
-  data[key] = (data[key] || 0) + 1;
-  localStorage.setItem(storageKey, JSON.stringify(data));
-  updatePollData(pollId, data); // Also save to JSONBin
-
-  const name = document.getElementById('nickname-input').value.trim();
-  showThankYou(name, label);
-  fireConfetti();
+    const name = document.getElementById('nickname-input').value.trim();
+    showThankYou(name, label);
+    fireConfetti();
+  } catch(e) {
+    console.error('Vote failed', e);
+    // Re-enable buttons on error
+    document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = false);
+  }
 }
 
 function showThankYou(name, choice) {

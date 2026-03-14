@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Accelerating Work with AI — Workshop</title>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 /* ===================== DESIGN TOKENS ===================== */
 :root {
@@ -1033,19 +1033,10 @@ ul.bullet-list li { line-height: 1.5; }
     </li>
   </ul>
 
-  <div class="presenter-card" style="margin-top:28px;">
-    <div class="presenter-avatar" aria-hidden="true">👨‍🔧</div>
-    <div>
-      <div class="presenter-name">Workshop Presenter</div>
-      <div class="presenter-role">AutoSpace CIC founder · AutoLearner platform · PCB designer &amp; maker</div>
-      <div class="presenter-quote">"I use these tools every day for grant applications, curriculum design, electronics documentation, and business planning."</div>
-    </div>
-  </div>
-
   <div class="poll-container" id="poll-icebreaker-container">
     <div class="poll-question">🗳️ How much AI do you currently use?</div>
     <div class="qr-canvas-wrapper">
-      <canvas id="qr-icebreaker" aria-label="QR code to vote on icebreaker poll"></canvas>
+      <div id="qr-icebreaker" aria-label="QR code to vote on icebreaker poll"></div>
       <span class="qr-label">Scan to vote on your phone</span>
     </div>
     <div class="poll-results" id="results-icebreaker" aria-live="polite" aria-label="Live poll results">
@@ -1417,7 +1408,7 @@ Professional but accessible. Avoid jargon. Write as if explaining to an intellig
   <div class="poll-container" id="poll-timesink-container">
     <div class="poll-question">🗳️ Which of these tasks takes most of your time?</div>
     <div class="qr-canvas-wrapper">
-      <canvas id="qr-timesink" aria-label="QR code to vote on time sink poll"></canvas>
+      <div id="qr-timesink" aria-label="QR code to vote on time sink poll"></div>
       <span class="qr-label">Scan to vote on your phone</span>
     </div>
     <div class="poll-results" id="results-timesink" aria-live="polite">
@@ -2215,10 +2206,16 @@ document.addEventListener('keydown', e => {
 
 // ===================== QR CODES =====================
 function generateQR(canvasId, url) {
-  const canvas = $(canvasId);
-  if (!canvas || typeof QRCode === 'undefined') return;
-  QRCode.toCanvas(canvas, url, { width: 160, margin: 1, color: { dark: '#1a1a1a', light: '#ffffff' } }, err => {
-    if (err) console.warn('QR gen error:', err);
+  const el = document.getElementById(canvasId);
+  if (!el) return;
+  el.innerHTML = '';
+  new QRCode(el, {
+    text: url,
+    width: 160,
+    height: 160,
+    colorDark: '#1a1a1a',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
   });
 }
 
@@ -2232,8 +2229,8 @@ window.addEventListener('load', () => {
   generateQR('qr-timesink', base + '/poll?q=timesink');
 });
 
-const JSONBIN_KEY = '$2a$10$hGdt81TjCOw.VBkX9ILbNOkyfoaXto.aBxxUpgnAMQ4HHA0Em0lYe';
-const JSONBIN_BIN = '69b5337aaa77b81da9e357be';
+const JSONBIN_KEY = 'YOUR_KEY_HERE';
+const JSONBIN_BIN = 'YOUR_BIN_ID_HERE';
 
 async function fetchPollData() {
   try {
