@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/poll", "destination": "/poll.html" }
+  ]
+}

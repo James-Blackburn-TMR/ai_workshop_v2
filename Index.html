@@ -1,0 +1,2468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Accelerating Work with AI — Workshop</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+/* ===================== DESIGN TOKENS ===================== */
+:root {
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f7f7f5;
+  --color-bg-accent: #f1f1ef;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #4a4a4a;
+  --color-text-muted: #737373;
+  --color-accent: #2383e2;
+  --color-success: #0d8478;
+  --color-warning: #d9730d;
+  --color-purple: #7c3aed;
+  --color-pink: #db2777;
+  --color-orange: #ea580c;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  --transition: 0.2s ease;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+}
+[data-theme="dark"] {
+  --color-bg-primary: #1a1a1a;
+  --color-bg-secondary: #242424;
+  --color-bg-accent: #2e2e2e;
+  --color-text-primary: #f0f0f0;
+  --color-text-secondary: #c0c0c0;
+  --color-text-muted: #808080;
+}
+
+/* ===================== RESET & BASE ===================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: var(--font);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  overflow-x: hidden;
+  transition: background var(--transition), color var(--transition);
+}
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { cursor: pointer; font-family: var(--font); }
+input, textarea, select { font-family: var(--font); }
+
+/* ===================== PROGRESS BAR ===================== */
+#progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  width: 0%;
+  height: 3px;
+  background: linear-gradient(to right, var(--color-accent), var(--color-purple), var(--color-pink));
+  z-index: 9999;
+  transition: width 0.1s linear;
+}
+
+/* ===================== OFFLINE BANNER ===================== */
+#offline-banner {
+  display: none;
+  position: fixed;
+  top: 3px; left: 0; right: 0;
+  background: #fef3c7;
+  color: #92400e;
+  text-align: center;
+  padding: 6px 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  z-index: 9998;
+}
+[data-theme="dark"] #offline-banner { background: #3b2a00; color: #fbbf24; }
+
+/* ===================== GRADIENT BLOBS ===================== */
+.blob {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+}
+.blob-1 {
+  width: 500px; height: 500px;
+  top: -100px; right: -100px;
+  background: radial-gradient(circle, #7c3aed, #c026d3);
+}
+.blob-2 {
+  width: 400px; height: 400px;
+  bottom: -80px; left: -80px;
+  background: radial-gradient(circle, #db2777, #ea580c);
+}
+
+/* ===================== HEADER ===================== */
+#site-header {
+  text-align: center;
+  padding: 64px 24px 40px;
+  position: relative;
+  z-index: 10;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+#site-header.hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+.header-title {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
+.header-subtitle {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  color: var(--color-text-secondary);
+  margin-bottom: 24px;
+}
+.meta-pills {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.meta-pill {
+  background: var(--color-bg-accent);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+[data-theme="dark"] .meta-pill { border-color: rgba(255,255,255,0.1); }
+
+/* ===================== STICKY NAV ===================== */
+#main-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+  padding: 0 16px;
+  transition: top 0.3s ease;
+}
+[data-theme="dark"] #main-nav {
+  background: rgba(26,26,26,0.92);
+  border-bottom-color: rgba(255,255,255,0.07);
+}
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 8px 0;
+}
+.nav-inner::-webkit-scrollbar { display: none; }
+.nav-link {
+  background: none;
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+.nav-link:hover { background: var(--color-bg-accent); color: var(--color-text-primary); }
+.nav-link.active { background: var(--color-accent); color: #fff; }
+
+/* ===================== LAYOUT ===================== */
+.page-wrapper {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px 120px;
+}
+
+/* ===================== SECTION ===================== */
+.section {
+  margin-bottom: 48px;
+  border-radius: var(--radius-lg);
+  padding: 36px 40px;
+  position: relative;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+[data-theme="dark"] .section { border-color: rgba(255,255,255,0.06); }
+.section-pre-workshop { background: #fffbeb; }
+.section-perplexity { background: #eff6ff; }
+.section-models { background: #eef2ff; }
+.section-comet { background: #fdf2f8; }
+.section-spaces { background: #eff6ff; }
+.section-workflows { background: #f3e8ff; }
+.section-practice { background: #f0fdf4; }
+.section-handson { background: #fff7ed; }
+.section-cheatsheet { background: #fffbeb; }
+.section-qa { background: var(--color-bg-primary); }
+
+[data-theme="dark"] .section-pre-workshop { background: #2a2400; }
+[data-theme="dark"] .section-perplexity { background: #0d1a2e; }
+[data-theme="dark"] .section-models { background: #0f1235; }
+[data-theme="dark"] .section-comet { background: #2a0a1a; }
+[data-theme="dark"] .section-spaces { background: #0d1a2e; }
+[data-theme="dark"] .section-workflows { background: #1a0d2e; }
+[data-theme="dark"] .section-practice { background: #0d1f0d; }
+[data-theme="dark"] .section-handson { background: #2e1a00; }
+[data-theme="dark"] .section-cheatsheet { background: #2a2400; }
+
+.section-heading {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.time-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(0,0,0,0.08);
+  border-radius: 100px;
+  padding: 3px 10px;
+  color: var(--color-text-muted);
+}
+[data-theme="dark"] .time-badge { background: rgba(255,255,255,0.1); }
+.section-intro {
+  color: var(--color-text-secondary);
+  margin-bottom: 24px;
+  font-size: 1rem;
+}
+
+/* ===================== COLLAPSIBLE ===================== */
+.collapsible { margin-bottom: 16px; }
+.collapsible-trigger {
+  width: 100%;
+  text-align: left;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background var(--transition), border-color var(--transition);
+}
+[data-theme="dark"] .collapsible-trigger {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.1);
+}
+.collapsible-trigger:hover { background: rgba(255,255,255,0.9); }
+[data-theme="dark"] .collapsible-trigger:hover { background: rgba(255,255,255,0.1); }
+.collapsible-trigger:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.collapsible-icon {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.07);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem;
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}
+[data-theme="dark"] .collapsible-icon { background: rgba(255,255,255,0.1); }
+.collapsible-trigger[aria-expanded="true"] .collapsible-icon { transform: rotate(180deg); }
+.collapsible-body {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+.collapsible-body.open { max-height: 9999px; }
+.collapsible-content {
+  padding: 20px 18px 8px;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: rgba(255,255,255,0.4);
+}
+[data-theme="dark"] .collapsible-content {
+  background: rgba(255,255,255,0.03);
+  border-color: rgba(255,255,255,0.06);
+}
+
+/* ===================== CHECKLIST ===================== */
+.checklist { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.7);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0,0,0,0.06);
+  transition: background var(--transition);
+  cursor: pointer;
+}
+[data-theme="dark"] .checklist-item {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.08);
+}
+.checklist-item:hover { background: rgba(255,255,255,0.95); }
+[data-theme="dark"] .checklist-item:hover { background: rgba(255,255,255,0.1); }
+.checklist-item input[type="checkbox"] {
+  width: 18px; height: 18px;
+  accent-color: var(--color-success);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.checklist-label { font-size: 0.95rem; color: var(--color-text-primary); }
+.checklist-item.checked .checklist-label {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+/* ===================== CARDS ===================== */
+.card {
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  transition: box-shadow var(--transition);
+}
+[data-theme="dark"] .card {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.08);
+}
+.card:hover { box-shadow: var(--shadow-md); }
+.card-title { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+.card-body { font-size: 0.9rem; color: var(--color-text-secondary); }
+
+.card-grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+.card-grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; }
+@media (max-width: 680px) {
+  .card-grid-3, .card-grid-2 { grid-template-columns: 1fr; }
+}
+
+/* ===================== MODEL CARDS ===================== */
+.model-card {
+  background: rgba(255,255,255,0.8);
+  border: 2px solid rgba(0,0,0,0.07);
+  border-radius: var(--radius-lg);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+[data-theme="dark"] .model-card {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.1);
+}
+.model-card:hover { border-color: var(--color-accent); box-shadow: var(--shadow-md); }
+.model-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 10px;
+  border-radius: 100px;
+  margin-bottom: 4px;
+}
+.badge-blue { background: #dbeafe; color: #1d4ed8; }
+.badge-purple { background: #ede9fe; color: #6d28d9; }
+.badge-green { background: #dcfce7; color: #15803d; }
+[data-theme="dark"] .badge-blue { background: #1e3a5f; color: #93c5fd; }
+[data-theme="dark"] .badge-purple { background: #2e1a5f; color: #c4b5fd; }
+[data-theme="dark"] .badge-green { background: #0d3320; color: #86efac; }
+.model-name { font-size: 1.15rem; font-weight: 700; }
+.model-row { font-size: 0.85rem; color: var(--color-text-secondary); }
+.model-row strong { color: var(--color-text-primary); }
+.model-example {
+  background: rgba(0,0,0,0.04);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--color-text-muted);
+  border-left: 3px solid var(--color-accent);
+}
+[data-theme="dark"] .model-example { background: rgba(255,255,255,0.04); }
+
+/* ===================== CODE BLOCKS ===================== */
+.code-block-wrapper {
+  position: relative;
+  margin: 16px 0;
+}
+.code-block {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  font-family: 'Fira Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.copy-btn {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #cdd6f4;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: background var(--transition);
+}
+.copy-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* ===================== BUTTONS ===================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  transition: transform 0.1s, box-shadow 0.1s, background 0.2s;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--color-accent); color: #fff; }
+.btn-primary:hover { background: #1a6fc0; box-shadow: 0 4px 12px rgba(35,131,226,0.3); }
+.btn-secondary {
+  background: rgba(0,0,0,0.07);
+  color: var(--color-text-primary);
+  border: 1px solid rgba(0,0,0,0.1);
+}
+[data-theme="dark"] .btn-secondary { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); color: var(--color-text-primary); }
+.btn-secondary:hover { background: rgba(0,0,0,0.12); }
+.btn-success { background: var(--color-success); color: #fff; }
+.btn-warning { background: var(--color-warning); color: #fff; }
+.btn-purple { background: var(--color-purple); color: #fff; }
+.btn-print { background: #374151; color: #fff; }
+.btn-print:hover { background: #1f2937; }
+
+/* ===================== TAKEAWAY BOX ===================== */
+.takeaway-box {
+  margin-top: 24px;
+  background: linear-gradient(135deg, rgba(35,131,226,0.1), rgba(124,58,237,0.1));
+  border: 1px solid rgba(35,131,226,0.2);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+}
+.takeaway-box::before { content: '💡 '; }
+
+/* ===================== PAUSE PROMPT ===================== */
+.pause-prompt {
+  background: rgba(0,0,0,0.04);
+  border-left: 4px solid var(--color-warning);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 12px 16px;
+  margin-top: 20px;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+[data-theme="dark"] .pause-prompt { background: rgba(255,255,255,0.04); }
+.pause-prompt::before { content: '💬 '; font-style: normal; }
+
+/* ===================== PRESENTER CARD ===================== */
+.presenter-card {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: rgba(255,255,255,0.75);
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin: 24px 0;
+}
+[data-theme="dark"] .presenter-card { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); }
+.presenter-avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-purple), var(--color-pink));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; flex-shrink: 0;
+}
+.presenter-name { font-weight: 700; font-size: 1rem; margin-bottom: 2px; }
+.presenter-role { font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 8px; }
+.presenter-quote { font-size: 0.88rem; color: var(--color-text-secondary); font-style: italic; }
+
+/* ===================== POLL / QR ===================== */
+.poll-container {
+  background: rgba(255,255,255,0.8);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+[data-theme="dark"] .poll-container { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); }
+.poll-question { font-weight: 700; font-size: 1.05rem; text-align: center; }
+.qr-canvas-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.qr-label { font-size: 0.8rem; color: var(--color-text-muted); }
+.poll-results { width: 100%; }
+.poll-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 0.88rem;
+}
+.poll-bar-label { width: 120px; flex-shrink: 0; font-weight: 500; }
+.poll-bar-track {
+  flex: 1;
+  background: var(--color-bg-accent);
+  border-radius: 100px;
+  height: 12px;
+  overflow: hidden;
+}
+.poll-bar-fill {
+  height: 100%;
+  border-radius: 100px;
+  background: linear-gradient(to right, var(--color-accent), var(--color-purple));
+  width: 0%;
+  transition: width 0.5s ease;
+}
+.poll-bar-count { width: 32px; text-align: right; color: var(--color-text-muted); font-size: 0.8rem; }
+
+/* ===================== MODEL SIMULATOR ===================== */
+.model-sim {
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin: 24px 0;
+}
+[data-theme="dark"] .model-sim { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+.model-sim-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.model-sim-select {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0,0,0,0.15);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+}
+[data-theme="dark"] .model-sim-select { background: var(--color-bg-secondary); border-color: rgba(255,255,255,0.15); }
+.model-sim-prompt {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.04);
+  border-radius: var(--radius-sm);
+}
+[data-theme="dark"] .model-sim-prompt { background: rgba(255,255,255,0.04); }
+.model-sim-response {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  min-height: 80px;
+  transition: all 0.3s ease;
+}
+.sim-compare-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+@media (max-width: 680px) { .sim-compare-grid { grid-template-columns: 1fr; } }
+.sim-compare-card {
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  font-size: 0.82rem;
+}
+[data-theme="dark"] .sim-compare-card { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.07); }
+.sim-compare-card h4 { margin-bottom: 8px; font-size: 0.85rem; color: var(--color-text-primary); }
+.sim-compare-card p { color: var(--color-text-secondary); line-height: 1.6; }
+
+/* ===================== DECISION FLOW ===================== */
+.decision-flow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+  font-size: 0.88rem;
+}
+.flow-node {
+  background: rgba(255,255,255,0.8);
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+[data-theme="dark"] .flow-node { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); }
+.flow-arrow { color: var(--color-text-muted); font-size: 1.1rem; }
+.flow-result { background: var(--color-accent); color: #fff; border-radius: var(--radius-sm); padding: 6px 12px; font-weight: 600; }
+
+/* ===================== WORKFLOW STEPS ===================== */
+.workflow-steps { list-style: none; counter-reset: steps; display: flex; flex-direction: column; gap: 12px; }
+.workflow-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  counter-increment: steps;
+}
+.step-number {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700;
+  flex-shrink: 0;
+}
+.step-content { flex: 1; padding-top: 4px; font-size: 0.92rem; color: var(--color-text-secondary); }
+.step-content strong { color: var(--color-text-primary); display: block; font-size: 0.95rem; margin-bottom: 2px; }
+
+/* ===================== RESULT BOX ===================== */
+.result-box {
+  background: rgba(13,132,120,0.08);
+  border: 1px solid rgba(13,132,120,0.2);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+}
+.result-box strong { color: var(--color-success); }
+
+/* ===================== CONTEXT LAYERS ===================== */
+.layer-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 16px 0; }
+@media (max-width: 680px) { .layer-cards { grid-template-columns: 1fr; } }
+.layer-card {
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-size: 0.88rem;
+}
+.layer-card h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; }
+.layer-space { background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.2); }
+.layer-file { background: rgba(35,131,226,0.08); border: 1px solid rgba(35,131,226,0.2); }
+.layer-convo { background: rgba(13,132,120,0.08); border: 1px solid rgba(13,132,120,0.2); }
+
+/* ===================== BEST PRACTICES GRID ===================== */
+.practice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 16px 0; }
+@media (max-width: 600px) { .practice-grid { grid-template-columns: 1fr; } }
+.practice-card {
+  border-radius: var(--radius-md);
+  padding: 20px;
+  font-size: 0.88rem;
+}
+.practice-do { background: rgba(13,132,120,0.07); border: 1px solid rgba(13,132,120,0.18); }
+.practice-dont { background: rgba(217,115,13,0.07); border: 1px solid rgba(217,115,13,0.18); }
+.practice-card h3 { font-size: 0.95rem; margin-bottom: 12px; }
+.practice-card ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.practice-card li { padding-left: 20px; position: relative; color: var(--color-text-secondary); }
+.practice-do li::before { content: '✅'; position: absolute; left: 0; font-size: 0.8rem; }
+.practice-dont li::before { content: '⚠️'; position: absolute; left: 0; font-size: 0.8rem; }
+
+/* ===================== WARNING BOX ===================== */
+.warning-box {
+  background: rgba(217,115,13,0.08);
+  border: 1px solid rgba(217,115,13,0.25);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin: 12px 0;
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+}
+.warning-box::before { content: '⚠️ '; }
+
+/* ===================== TIMER ===================== */
+.exercise-card {
+  background: rgba(255,255,255,0.75);
+  border: 2px solid rgba(0,0,0,0.06);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 20px;
+  transition: border-color var(--transition);
+}
+[data-theme="dark"] .exercise-card { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+.exercise-card.timer-running { border-color: var(--color-success); }
+.exercise-card.timer-warning { border-color: var(--color-warning); }
+.exercise-card.timer-critical { border-color: #ef4444; }
+.exercise-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.exercise-title { font-size: 1.1rem; font-weight: 700; }
+.exercise-duration { font-size: 0.8rem; color: var(--color-text-muted); font-weight: 500; }
+.timer-display {
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  color: var(--color-success);
+  transition: color var(--transition);
+}
+.timer-display.warning { color: var(--color-warning); }
+.timer-display.critical { color: #ef4444; }
+.timer-controls { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.exercise-steps { list-style: none; counter-reset: ex-steps; display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.exercise-step {
+  display: flex; gap: 10px; align-items: flex-start;
+  font-size: 0.9rem; color: var(--color-text-secondary);
+  counter-increment: ex-steps;
+}
+.ex-step-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--color-warning); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 700; flex-shrink: 0;
+}
+
+/* ===================== COMMITMENT CARD ===================== */
+.commitment-form {
+  background: rgba(255,255,255,0.75);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-top: 24px;
+}
+[data-theme="dark"] .commitment-form { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); }
+.commitment-form h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+.form-row { margin-bottom: 14px; }
+.form-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 6px; }
+.form-input, .form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: 0.92rem;
+  transition: border-color var(--transition);
+}
+[data-theme="dark"] .form-input, [data-theme="dark"] .form-textarea {
+  background: var(--color-bg-secondary);
+  border-color: rgba(255,255,255,0.12);
+}
+.form-input:focus, .form-textarea:focus { outline: none; border-color: var(--color-accent); }
+.form-textarea { resize: vertical; min-height: 80px; }
+.generated-card {
+  display: none;
+  background: linear-gradient(135deg, rgba(35,131,226,0.08), rgba(124,58,237,0.08));
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-top: 16px;
+  text-align: center;
+}
+.generated-card.visible { display: block; }
+.generated-card-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--color-text-muted); margin-bottom: 8px; }
+.generated-card-text { font-size: 1.2rem; font-weight: 700; color: var(--color-text-primary); margin-bottom: 4px; }
+.generated-card-name { font-size: 0.9rem; color: var(--color-text-muted); }
+.generated-card-actions { display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+
+/* ===================== CHEAT SHEET ===================== */
+.cheat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+@media (max-width: 900px) { .cheat-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 560px) { .cheat-grid { grid-template-columns: 1fr; } }
+.cheat-col h3 { font-size: 0.88rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted); margin-bottom: 12px; }
+.cheat-col ul { list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem; color: var(--color-text-secondary); }
+.cheat-col li { padding-left: 16px; position: relative; }
+.cheat-col li::before { content: '→'; position: absolute; left: 0; color: var(--color-accent); }
+.cheat-code {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-family: 'Fira Mono', 'Consolas', monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+.cheat-top10 { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.cheat-top10 li {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+  padding: 6px 8px;
+  background: rgba(0,0,0,0.03);
+  border-radius: 4px;
+  border-left: 2px solid var(--color-accent);
+  counter-increment: prompts;
+}
+[data-theme="dark"] .cheat-top10 li { background: rgba(255,255,255,0.03); }
+
+/* ===================== FEEDBACK FORM ===================== */
+.feedback-section {
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  margin-top: 24px;
+}
+[data-theme="dark"] .feedback-section { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+.feedback-section h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; }
+.feedback-confirmation {
+  display: none;
+  background: rgba(13,132,120,0.1);
+  border: 1px solid rgba(13,132,120,0.25);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-success);
+}
+.feedback-confirmation.visible { display: block; }
+
+/* ===================== FEEDBACK TABLE ===================== */
+#feedback-viewer {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 10000;
+  overflow: auto;
+  padding: 40px 20px;
+}
+#feedback-viewer.visible { display: flex; align-items: flex-start; justify-content: center; }
+.feedback-table-wrapper {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  max-width: 900px;
+  width: 100%;
+}
+.feedback-table-wrapper h2 { margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid rgba(0,0,0,0.07); }
+[data-theme="dark"] th, [data-theme="dark"] td { border-bottom-color: rgba(255,255,255,0.07); }
+th { background: var(--color-bg-accent); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ===================== ACTION ITEMS ===================== */
+.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+@media (max-width: 600px) { .action-grid { grid-template-columns: 1fr; } }
+.action-card { border-radius: var(--radius-md); padding: 20px; }
+.action-everyone { background: rgba(35,131,226,0.07); border: 1px solid rgba(35,131,226,0.2); }
+.action-optional { background: rgba(124,58,237,0.07); border: 1px solid rgba(124,58,237,0.2); }
+.action-card h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 10px; }
+.action-card ul { font-size: 0.88rem; padding-left: 18px; color: var(--color-text-secondary); display: flex; flex-direction: column; gap: 5px; }
+
+/* ===================== FOLLOW-UP BOX ===================== */
+.followup-box {
+  background: linear-gradient(135deg, rgba(124,58,237,0.06), rgba(219,39,119,0.06));
+  border: 1px solid rgba(124,58,237,0.2);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+.followup-box strong { color: var(--color-text-primary); display: block; margin-bottom: 4px; font-size: 1rem; }
+
+/* ===================== CONTROL PANEL ===================== */
+#control-panel {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 500;
+  transition: opacity 0.3s ease;
+}
+#control-panel.presenter-hidden { opacity: 0; pointer-events: none; }
+.ctrl-btn {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-size: 1.1rem;
+  box-shadow: var(--shadow-md);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.1s, box-shadow 0.1s;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+[data-theme="dark"] .ctrl-btn { border-color: rgba(255,255,255,0.1); }
+.ctrl-btn:hover { transform: scale(1.08); box-shadow: var(--shadow-lg); }
+.ctrl-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+/* ===================== Q&A ===================== */
+.qa-item {
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  padding: 16px 0;
+}
+[data-theme="dark"] .qa-item { border-bottom-color: rgba(255,255,255,0.06); }
+.qa-q { font-weight: 700; margin-bottom: 6px; font-size: 0.95rem; }
+.qa-a { font-size: 0.9rem; color: var(--color-text-secondary); }
+
+/* ===================== PRINT STYLES ===================== */
+@media print {
+  #progress-bar, #site-header, #main-nav, #control-panel,
+  #offline-banner, .blob, .btn, .poll-container,
+  .presenter-card, .pause-prompt, .exercise-card,
+  .commitment-form, .feedback-section, .section:not(#cheatsheet) { display: none !important; }
+  #cheatsheet { display: block !important; background: white !important; border: none !important; padding: 0 !important; }
+  .collapsible-body { max-height: none !important; }
+  body { background: white !important; color: black !important; }
+  .cheat-grid { display: grid !important; grid-template-columns: repeat(4,1fr) !important; }
+}
+
+/* ===================== PRESENTER MODE ===================== */
+body.presenter-mode #main-nav { display: none; }
+body.presenter-mode #control-panel { opacity: 0; pointer-events: none; }
+body.presenter-mode .section:not(.section-active) {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+/* ===================== MISC ===================== */
+hr { border: none; border-top: 1px solid rgba(0,0,0,0.07); margin: 20px 0; }
+[data-theme="dark"] hr { border-top-color: rgba(255,255,255,0.07); }
+ul.bullet-list { padding-left: 20px; display: flex; flex-direction: column; gap: 7px; font-size: 0.92rem; color: var(--color-text-secondary); }
+ul.bullet-list li { line-height: 1.5; }
+.inline-highlight {
+  background: rgba(35,131,226,0.1);
+  color: var(--color-accent);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+.spacer { height: 16px; }
+.task-auto-section { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+@media (max-width: 640px) { .task-auto-section { grid-template-columns: 1fr; } }
+.with-without {
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-size: 0.85rem;
+}
+.with-space { background: rgba(13,132,120,0.07); border: 1px solid rgba(13,132,120,0.18); }
+.without-space { background: rgba(217,115,13,0.07); border: 1px solid rgba(217,115,13,0.18); }
+.with-without h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; }
+.with-without p { color: var(--color-text-secondary); line-height: 1.6; }
+.task-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin: 16px 0; }
+@media (max-width: 680px) { .task-cards { grid-template-columns: repeat(2,1fr); } }
+.task-card {
+  background: rgba(255,255,255,0.75);
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+[data-theme="dark"] .task-card { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); }
+.task-card .task-icon { font-size: 1.6rem; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div id="progress-bar" role="progressbar" aria-label="Page scroll progress"></div>
+<div id="offline-banner" role="alert">⚠️ Offline — QR polls unavailable</div>
+<div class="blob blob-1" aria-hidden="true"></div>
+<div class="blob blob-2" aria-hidden="true"></div>
+
+<!-- HEADER -->
+<header id="site-header">
+  <h1 class="header-title">Accelerating Work with AI</h1>
+  <p class="header-subtitle">A Practical Guide to Perplexity, Comet &amp; Spaces</p>
+  <div class="meta-pills">
+    <span class="meta-pill">⏱️ 90–120 min</span>
+    <span class="meta-pill">👥 Interactive + Hands-on</span>
+    <span class="meta-pill">🎯 Practical workflows</span>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav id="main-nav" aria-label="Workshop sections">
+  <div class="nav-inner">
+    <button class="nav-link" data-target="pre-workshop" aria-label="Go to Pre-Workshop section">Pre-Workshop</button>
+    <button class="nav-link" data-target="perplexity" aria-label="Go to Perplexity section">Perplexity</button>
+    <button class="nav-link" data-target="models" aria-label="Go to Models section">Models</button>
+    <button class="nav-link" data-target="comet" aria-label="Go to Comet section">Comet</button>
+    <button class="nav-link" data-target="spaces" aria-label="Go to Spaces section">Spaces</button>
+    <button class="nav-link" data-target="workflows" aria-label="Go to Workflows section">Workflows</button>
+    <button class="nav-link" data-target="practice" aria-label="Go to Best Practices section">Best Practices</button>
+    <button class="nav-link" data-target="handson" aria-label="Go to Hands-On section">Hands-On</button>
+    <button class="nav-link" data-target="cheatsheet" aria-label="Go to Cheat Sheet section">Cheat Sheet</button>
+    <button class="nav-link" data-target="qa" aria-label="Go to Q&A section">Q&amp;A</button>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="page-wrapper">
+
+<!-- ===== SECTION 1: PRE-WORKSHOP ===== -->
+<section class="section section-pre-workshop" id="pre-workshop">
+  <h2 class="section-heading">✅ Before We Start <span class="time-badge">⏱️ 5 min</span></h2>
+  <p class="section-intro">Get set up, meet your presenter, and cast your first vote.</p>
+
+  <ul class="checklist" id="checklist">
+    <li class="checklist-item" data-key="account" role="listitem">
+      <input type="checkbox" id="chk-account" aria-label="Perplexity Pro account active" />
+      <label class="checklist-label" for="chk-account">Perplexity Pro account active (<a href="https://perplexity.ai" target="_blank" rel="noopener">perplexity.ai</a>)</label>
+    </li>
+    <li class="checklist-item" data-key="comet" role="listitem">
+      <input type="checkbox" id="chk-comet" aria-label="Comet browser installed" />
+      <label class="checklist-label" for="chk-comet">Comet browser installed (<a href="https://perplexity.ai/comet" target="_blank" rel="noopener">perplexity.ai/comet</a>)</label>
+    </li>
+    <li class="checklist-item" data-key="browser" role="listitem">
+      <input type="checkbox" id="chk-browser" aria-label="Chrome or Edge browser open" />
+      <label class="checklist-label" for="chk-browser">Chrome or Edge browser open</label>
+    </li>
+    <li class="checklist-item" data-key="phone" role="listitem">
+      <input type="checkbox" id="chk-phone" aria-label="Phone charged for QR polls" />
+      <label class="checklist-label" for="chk-phone">Phone charged (for QR polls)</label>
+    </li>
+    <li class="checklist-item" data-key="project" role="listitem">
+      <input type="checkbox" id="chk-project" aria-label="One current project in mind" />
+      <label class="checklist-label" for="chk-project">One current project in mind to use as example</label>
+    </li>
+  </ul>
+
+  <div class="presenter-card" style="margin-top:28px;">
+    <div class="presenter-avatar" aria-hidden="true">👨‍🔧</div>
+    <div>
+      <div class="presenter-name">Workshop Presenter</div>
+      <div class="presenter-role">AutoSpace CIC founder · AutoLearner platform · PCB designer &amp; maker</div>
+      <div class="presenter-quote">"I use these tools every day for grant applications, curriculum design, electronics documentation, and business planning."</div>
+    </div>
+  </div>
+
+  <div class="poll-container" id="poll-icebreaker-container">
+    <div class="poll-question">🗳️ How much AI do you currently use?</div>
+    <div class="qr-canvas-wrapper">
+      <canvas id="qr-icebreaker" aria-label="QR code to vote on icebreaker poll"></canvas>
+      <span class="qr-label">Scan to vote on your phone</span>
+    </div>
+    <div class="poll-results" id="results-icebreaker" aria-live="polite" aria-label="Live poll results">
+      <div class="poll-bar-row">
+        <span class="poll-bar-label">🙈 Never</span>
+        <div class="poll-bar-track"><div class="poll-bar-fill" id="bar-icebreaker-never"></div></div>
+        <span class="poll-bar-count" id="count-icebreaker-never">0</span>
+      </div>
+      <div class="poll-bar-row">
+        <span class="poll-bar-label">🤔 Occasionally</span>
+        <div class="poll-bar-track"><div class="poll-bar-fill" id="bar-icebreaker-occasionally"></div></div>
+        <span class="poll-bar-count" id="count-icebreaker-occasionally">0</span>
+      </div>
+      <div class="poll-bar-row">
+        <span class="poll-bar-label">🚀 Daily</span>
+        <div class="poll-bar-track"><div class="poll-bar-fill" id="bar-icebreaker-daily"></div></div>
+        <span class="poll-bar-count" id="count-icebreaker-daily">0</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 2: PERPLEXITY ===== -->
+<section class="section section-perplexity" id="perplexity">
+  <h2 class="section-heading">🔍 Perplexity 101 <span class="time-badge">⏱️ 10 min</span></h2>
+  <p class="section-intro">What it is, why it's different, and how to get the most from it in under 10 minutes.</p>
+
+  <div class="collapsible" id="coll-what-perplexity">
+    <button class="collapsible-trigger" aria-expanded="true" aria-controls="body-what-perplexity">
+      What is Perplexity?
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body open" id="body-what-perplexity">
+      <div class="collapsible-content">
+        <ul class="bullet-list">
+          <li>AI answer engine combining live web search + real-time data + reasoning models</li>
+          <li>Returns <strong>cited answers</strong> — every claim linked to a source, not just a list of links</li>
+          <li>Has modes: <span class="inline-highlight">Quick Search</span>, <span class="inline-highlight">Pro Search</span>, <span class="inline-highlight">Deep Research</span></li>
+          <li><strong>vs Google:</strong> synthesises and reasons rather than just indexing — you get an answer, not ten links</li>
+          <li><strong>vs ChatGPT:</strong> always connected to real-time web, always cited, no knowledge cut-off problem</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="collapsible" id="coll-deep-research">
+    <button class="collapsible-trigger" aria-expanded="false" aria-controls="body-deep-research">
+      Deep Research mode
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body" id="body-deep-research">
+      <div class="collapsible-content">
+        <ul class="bullet-list">
+          <li>Multi-step research agent — reads 20–50 sources before composing its answer</li>
+          <li>Best for: complex questions, competitive analysis, grant research, technical deep-dives</li>
+          <li>Takes 1–3 minutes but saves hours of manual research</li>
+        </ul>
+        <div class="spacer"></div>
+        <p style="font-size:0.88rem;font-weight:600;margin-bottom:8px;">Example prompt from real work:</p>
+        <div class="code-block-wrapper">
+          <div class="code-block" id="cb-deep-research">Research 3 UK funding bodies for automotive education CICs. Compare eligibility criteria, funding amounts, and success rates. Provide direct links to application pages.</div>
+          <button class="copy-btn" onclick="copyCode('cb-deep-research', this)" aria-label="Copy prompt">📋 Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin:20px 0;">
+    <a href="https://perplexity.ai" target="_blank" rel="noopener" class="btn btn-primary" aria-label="Open Perplexity in new tab">🔗 Try Perplexity Now</a>
+  </div>
+
+  <div class="takeaway-box">Perplexity = Google + reasoning + citations. Use it when you need a researched answer, not just a link.</div>
+
+  <div class="pause-prompt">Name one question you've Googled this week that Perplexity could have answered better.</div>
+</section>
+
+<!-- ===== SECTION 3: MODELS ===== -->
+<section class="section section-models" id="models">
+  <h2 class="section-heading">🧠 Model Selector <span class="time-badge">⏱️ 10 min</span></h2>
+  <p class="section-intro">Perplexity Pro lets you choose which AI brain to use. Picking the right one saves time and gets better results.</p>
+
+  <div class="card-grid-3" style="margin-bottom:24px;">
+    <!-- Sonar -->
+    <div class="model-card">
+      <span class="model-badge badge-blue">Fastest</span>
+      <div class="model-name">Sonar Large</div>
+      <div class="model-row"><strong>Best for:</strong> Quick Q&amp;A, web research, fact-checking</div>
+      <div class="model-row"><strong>Context:</strong> 128K tokens</div>
+      <div class="model-row"><strong>Strengths:</strong> Speed, search integration, citations</div>
+      <div class="model-row"><strong>Use when:</strong> "I need a quick researched answer"</div>
+      <div class="model-example">"What UK grants are available for automotive education CICs right now?"</div>
+    </div>
+    <!-- Claude -->
+    <div class="model-card">
+      <span class="model-badge badge-purple">Best Reasoning</span>
+      <div class="model-name">Claude 4.5 Sonnet</div>
+      <div class="model-row"><strong>Best for:</strong> Complex analysis, coding, debugging, long docs</div>
+      <div class="model-row"><strong>Context:</strong> 200K tokens</div>
+      <div class="model-row"><strong>Strengths:</strong> Nuanced reasoning, complex instructions, code</div>
+      <div class="model-row"><strong>Use when:</strong> "I need it to think carefully or debug something"</div>
+      <div class="model-example">"Review this grant application against the scoring rubric and identify weaknesses"</div>
+    </div>
+    <!-- GPT-5 -->
+    <div class="model-card">
+      <span class="model-badge badge-green">Most Creative</span>
+      <div class="model-name">GPT-5</div>
+      <div class="model-row"><strong>Best for:</strong> Writing, brainstorming, creative content, varied tone</div>
+      <div class="model-row"><strong>Context:</strong> 128K tokens</div>
+      <div class="model-row"><strong>Strengths:</strong> Writing quality, creativity, versatility</div>
+      <div class="model-row"><strong>Use when:</strong> "I need well-written copy or creative ideas"</div>
+      <div class="model-example">"Write 3 versions of this workshop description for different audiences"</div>
+    </div>
+  </div>
+
+  <!-- Model Simulator -->
+  <div class="model-sim">
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:12px;">🎮 Model Simulator</h3>
+    <div class="model-sim-prompt">📝 Prompt: "Explain what a Bill of Materials is for a beginner maker"</div>
+    <div class="model-sim-controls">
+      <select class="model-sim-select" id="model-select" aria-label="Select AI model to preview">
+        <option value="sonar">Sonar Large (Default)</option>
+        <option value="claude">Claude 4.5 Sonnet</option>
+        <option value="gpt5">GPT-5</option>
+      </select>
+      <button class="btn btn-secondary" onclick="showModelResponse()" aria-label="Preview selected model response">👁 Preview Response</button>
+      <button class="btn btn-primary" onclick="showCompare()" aria-label="Compare all models side by side">⚡ Compare All</button>
+    </div>
+    <div id="sim-single">
+      <div class="model-sim-response" id="model-response-display">Select a model and click Preview Response to see a sample answer.</div>
+    </div>
+    <div id="sim-compare" style="display:none;">
+      <div class="sim-compare-grid">
+        <div class="sim-compare-card">
+          <h4>⚡ Sonar Large</h4>
+          <p>A BOM — short for Bill of Materials — is essentially a shopping list for your project. According to makerspaces.com and RS Components, it lists every component you need: resistors, microcontrollers, connectors, and fasteners. Include part numbers and quantities to simplify ordering.</p>
+        </div>
+        <div class="sim-compare-card">
+          <h4>🧠 Claude 4.5 Sonnet</h4>
+          <p>A Bill of Materials (BOM) is a structured document specifying every component required to build a product. In electronics, a typical BOM includes: component reference designators (R1, C2…), part numbers, manufacturer, quantity, unit cost, and supplier. It serves as the canonical source of truth during procurement, assembly, and revision control. In KiCad, you can export a BOM directly from the schematic editor via the BOM plugin.</p>
+        </div>
+        <div class="sim-compare-card">
+          <h4>✍️ GPT-5</h4>
+          <p>Imagine you're baking a cake — before you start, you'd write out every ingredient you need. A Bill of Materials is exactly that, but for your maker project. It's your official ingredients list: every resistor, every bolt, every chip. Get it right upfront and you'll never find yourself halfway through a build, missing a crucial part. Think of it as your project's passport — it goes everywhere with you.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Decision Flow -->
+  <div style="margin:20px 0;">
+    <p style="font-size:0.88rem;font-weight:600;margin-bottom:12px;color:var(--color-text-secondary);">Quick decision guide:</p>
+    <div class="decision-flow">
+      <span class="flow-node">Quick research?</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-result" style="background:var(--color-accent);">Sonar</span>
+      <span style="margin:0 8px;color:var(--color-text-muted);">|</span>
+      <span class="flow-node">Complex reasoning?</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-result" style="background:var(--color-purple);">Claude</span>
+      <span style="margin:0 8px;color:var(--color-text-muted);">|</span>
+      <span class="flow-node">Writing?</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-result" style="background:var(--color-success);">GPT-5</span>
+    </div>
+  </div>
+
+  <div class="takeaway-box">Default (Sonar) is great for most tasks. Switch to Claude for analysis, GPT-5 for writing.</div>
+</section>
+
+<!-- ===== SECTION 4: COMET ===== -->
+<section class="section section-comet" id="comet">
+  <h2 class="section-heading">☄️ Comet 101 <span class="time-badge">⏱️ 15 min</span></h2>
+  <p class="section-intro">Your always-on AI browser — not just for answers, but for creating whole documents and spreadsheets grounded in real research.</p>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="true" aria-controls="body-what-comet">
+      What is Comet?
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body open" id="body-what-comet">
+      <div class="collapsible-content">
+        <ul class="bullet-list">
+          <li>An AI-powered browser — works across <strong>all your open tabs simultaneously</strong></li>
+          <li>Can see page context, summarise sites, fill forms, and search your inbox</li>
+          <li>Creates full documents and spreadsheets with Deep Research built in</li>
+          <li>Key difference: Comet lives in your browser all day; Perplexity.ai is for focused research sessions</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="false" aria-controls="body-doc-workflow">
+      Document Creation Workflow
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body" id="body-doc-workflow">
+      <div class="collapsible-content">
+        <p style="font-size:0.88rem;color:var(--color-text-muted);margin-bottom:16px;font-style:italic;">"First draft is just the beginning"</p>
+        <ol class="workflow-steps">
+          <li class="workflow-step"><div class="step-number">1</div><div class="step-content"><strong>Initial structure</strong>Give Comet a detailed prompt for what you need — include audience, purpose, sections, and tone.</div></li>
+          <li class="workflow-step"><div class="step-number">2</div><div class="step-content"><strong>Enable Deep Research mode</strong>Toggle on in the Comet sidebar before running the prompt — it will pull live sources.</div></li>
+          <li class="workflow-step"><div class="step-number">3</div><div class="step-content"><strong>Iterative refinement</strong>Work section by section: "Expand the risk assessment section with 3 specific examples."</div></li>
+          <li class="workflow-step"><div class="step-number">4</div><div class="step-content"><strong>Formatting enhancements</strong>"Add a summary table at the top. Format all headings as H2."</div></li>
+          <li class="workflow-step"><div class="step-number">5</div><div class="step-content"><strong>Export</strong>Download as DOCX or PDF for distribution or submission.</div></li>
+        </ol>
+        <div class="spacer"></div>
+        <p style="font-size:0.88rem;font-weight:600;margin-bottom:8px;">Example: Workshop Safety Protocol</p>
+        <div class="code-block-wrapper">
+          <div class="code-block" id="cb-doc-example">Create a workshop safety protocol document for an automotive repair education centre. 
+
+Include:
+- Introduction and scope
+- Personal protective equipment requirements
+- Vehicle lifting procedures
+- Chemical handling rules
+- Emergency procedures
+- Sign-off section for participants
+
+Audience: adult learners and volunteer tutors. Tone: professional but approachable. 
+Use Deep Research to reference current UK HSE guidelines where relevant.</div>
+          <button class="copy-btn" onclick="copyCode('cb-doc-example', this)" aria-label="Copy document prompt">📋 Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="false" aria-controls="body-spreadsheet">
+      Spreadsheet Creation
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body" id="body-spreadsheet">
+      <div class="collapsible-content">
+        <ul class="bullet-list" style="margin-bottom:16px;">
+          <li>Ask Comet to create spreadsheets with formulas, conditional formatting, dropdowns, and multiple sheets</li>
+          <li>It can pull live pricing data in Deep Research mode</li>
+          <li>Export as .xlsx for Excel or Google Sheets</li>
+        </ul>
+        <p style="font-size:0.88rem;font-weight:600;margin-bottom:8px;">Example: PCB Component Tracker</p>
+        <div class="code-block-wrapper">
+          <div class="code-block" id="cb-spreadsheet">Create a spreadsheet to track PCB components for an electronics project.
+
+Columns needed:
+- Reference (R1, C1, U1...)
+- Component name and value
+- Footprint
+- Manufacturer part number
+- RS Components stock code
+- Current unit price (GBP)
+- Quantity needed
+- Total cost (formula)
+- In stock? (dropdown: Yes/No/On Order)
+- Notes
+
+Add:
+- A summary row at the top showing total BOM cost
+- Conditional formatting: highlight rows where "In stock?" = "No" in amber
+- A second sheet called "Suppliers" with a table of preferred UK suppliers
+
+Use Deep Research to populate example UK pricing from RS Components for common passive components.</div>
+          <button class="copy-btn" onclick="copyCode('cb-spreadsheet', this)" aria-label="Copy spreadsheet prompt">📋 Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin:20px 0;">
+    <a href="https://perplexity.ai/comet" target="_blank" rel="noopener" class="btn btn-primary" aria-label="Open Comet in new tab">☄️ Try Comet Now</a>
+  </div>
+
+  <div class="takeaway-box">Comet = your always-on AI browser. Use it for creating structured documents and spreadsheets with real research backing.</div>
+</section>
+
+<!-- ===== SECTION 5: SPACES ===== -->
+<section class="section section-spaces" id="spaces">
+  <h2 class="section-heading">🚀 Perplexity Spaces <span class="time-badge">⏱️ 15 min</span></h2>
+  <p class="section-intro">Project-specific AI assistants with persistent memory — stop re-explaining your context every single time.</p>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="true" aria-controls="body-what-spaces">
+      What Are Spaces?
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body open" id="body-what-spaces">
+      <div class="collapsible-content">
+        <ul class="bullet-list">
+          <li><strong>Project background:</strong> Every Space knows your project from the start — no more copy-pasting context</li>
+          <li><strong>Tone &amp; voice:</strong> Set the writing style once; all output matches it automatically</li>
+          <li><strong>Audience awareness:</strong> Define who you're writing for and the Space adapts every response</li>
+          <li><strong>Document upload:</strong> Attach PDFs, rubrics, templates — the Space references them automatically</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="false" aria-controls="body-setup-space">
+      Setting Up Your First Space
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body" id="body-setup-space">
+      <div class="collapsible-content">
+        <ol class="workflow-steps">
+          <li class="workflow-step"><div class="step-number">1</div><div class="step-content"><strong>Create a new Space</strong>Go to Perplexity → Spaces → New Space. Give it a descriptive name like "AutoSpace Workshop Content".</div></li>
+          <li class="workflow-step"><div class="step-number">2</div><div class="step-content"><strong>Write custom instructions</strong>Use the template below — be specific about your project, audience, and tone.</div></li>
+          <li class="workflow-step"><div class="step-number">3</div><div class="step-content"><strong>Upload reference documents</strong>Attach relevant PDFs: past applications, scoring rubrics, equipment lists, brand guidelines.</div></li>
+        </ol>
+        <div class="spacer"></div>
+        <p style="font-size:0.88rem;font-weight:600;margin-bottom:8px;">Custom Instructions Template — AutoSpace Workshop:</p>
+        <div class="code-block-wrapper">
+          <div class="code-block" id="cb-space-instructions">## About This Project
+You are assisting with AutoSpace CIC — an automotive education community interest company in Lancashire, UK. We run practical workshops teaching car maintenance and repair skills to adults, including unemployed individuals and those seeking vocational qualifications.
+
+## Key Context
+- Organisation type: Community Interest Company (CIC), registered in England
+- Primary audience: Adult learners (16+), volunteer tutors, funders, and local authority partners
+- Current projects: Workshop curriculum development, grant applications, safeguarding policy documentation
+- Equipment: Hydraulic lifts, diagnostic tools, workshop consumables, PPE
+
+## Tone & Voice
+Professional but accessible. Avoid jargon. Write as if explaining to an intelligent non-expert. Use active voice. UK English spelling throughout.
+
+## What I Need Help With
+- Grant application writing and review
+- Workshop curriculum and session plans
+- Policy documents (health & safety, safeguarding)
+- Social media content and newsletters
+- Impact reports and case studies
+
+## Important Rules
+- Always cite sources when making factual claims
+- Flag anything that requires legal or financial professional review
+- When writing for funders, emphasise community impact and measurable outcomes</div>
+          <button class="copy-btn" onclick="copyCode('cb-space-instructions', this)" aria-label="Copy Space instructions template">📋 Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="false" aria-controls="body-task-auto">
+      Task Automation Examples
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body" id="body-task-auto">
+      <div class="collapsible-content">
+        <div class="task-cards">
+          <div class="task-card"><div class="task-icon">📅</div>Weekly Content Planning</div>
+          <div class="task-card"><div class="task-icon">💰</div>Grant Application Assistant</div>
+          <div class="task-card"><div class="task-icon">🔌</div>PCB Design Documentation</div>
+          <div class="task-card"><div class="task-icon">📱</div>Social Media Content</div>
+        </div>
+        <div class="task-auto-section" style="margin-top:16px;">
+          <div class="with-without without-space">
+            <h4>❌ Without a Space</h4>
+            <p>Every chat starts cold. You spend the first 200 words re-explaining what AutoSpace is, who the audience is, what tone you need, and what you've already tried. The AI treats you as a stranger every time.</p>
+          </div>
+          <div class="with-without with-space">
+            <h4>✅ With a Space</h4>
+            <p>Open the Space and type one sentence: "Draft a funding section for the Youth Futures application." The AI already knows your CIC, your audience, your tone, and your past work. You get a usable first draft immediately.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Poll 2 -->
+  <div class="poll-container" id="poll-timesink-container">
+    <div class="poll-question">🗳️ Which of these tasks takes most of your time?</div>
+    <div class="qr-canvas-wrapper">
+      <canvas id="qr-timesink" aria-label="QR code to vote on time sink poll"></canvas>
+      <span class="qr-label">Scan to vote on your phone</span>
+    </div>
+    <div class="poll-results" id="results-timesink" aria-live="polite">
+      <div class="poll-bar-row">
+        <span class="poll-bar-label">📝 Writing</span>
+        <div class="poll-bar-track"><div class="poll-bar-fill" id="bar-timesink-writing"></div></div>
+        <span class="poll-bar-count" id="count-timesink-writing">0</span>
+      </div>
+      <div class="poll-bar-row">
+        <span class="poll-bar-label">🔍 Research</span>
+        <div class="poll-bar-track"><div class="poll-bar-fill" id="bar-timesink-research"></div></div>
+        <span class="poll-bar-count" id="count-timesink-research">0</span>
+      </div>
+      <div class="poll-bar-row">
+        <span class="poll-bar-label">📊 Reporting</span>
+        <div class="poll-bar-track"><div class="poll-bar-fill" id="bar-timesink-reporting"></div></div>
+        <span class="poll-bar-count" id="count-timesink-reporting">0</span>
+      </div>
+      <div class="poll-bar-row">
+        <span class="poll-bar-label">📅 Planning</span>
+        <div class="poll-bar-track"><div class="poll-bar-fill" id="bar-timesink-planning"></div></div>
+        <span class="poll-bar-count" id="count-timesink-planning">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="takeaway-box">Spaces = long-term project memory. Create one for every major project and never re-explain your context again.</div>
+</section>
+
+<!-- ===== SECTION 6: WORKFLOWS ===== -->
+<section class="section section-workflows" id="workflows">
+  <h2 class="section-heading">⚙️ Real Workflows <span class="time-badge">⏱️ 20 min</span></h2>
+  <p class="section-intro">These are actual workflows used in AutoSpace, AutoLearner, and PCB projects — not hypotheticals.</p>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="true" aria-controls="body-wf-grant">
+      Workflow 1: Grant Application Process
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body open" id="body-wf-grant">
+      <div class="collapsible-content">
+        <p style="font-size:0.85rem;color:var(--color-text-muted);margin-bottom:12px;"><strong>Space used:</strong> "AutoSpace Funding" — contains past applications, funder criteria, and scoring rubrics</p>
+        <ol class="workflow-steps">
+          <li class="workflow-step"><div class="step-number">1</div><div class="step-content"><strong>Deep Research the funder</strong>Use Perplexity with Deep Research: "What does [Funder Name] prioritise in 2024–25? What projects have they funded recently in the North West?"</div></li>
+          <li class="workflow-step"><div class="step-number">2</div><div class="step-content"><strong>Eligibility check in Space</strong>Open your Funding Space and ask: "Do we meet the eligibility criteria for [Funder]? Flag any gaps."</div></li>
+          <li class="workflow-step"><div class="step-number">3</div><div class="step-content"><strong>Draft in Comet</strong>Use Comet with Deep Research to draft each section. Reference the rubric you uploaded to the Space.</div></li>
+          <li class="workflow-step"><div class="step-number">4</div><div class="step-content"><strong>Rubric review pass</strong>Paste the draft back into your Space: "Review this against the scoring rubric. What is weak? What's missing?"</div></li>
+        </ol>
+        <div class="result-box">
+          <strong>Result:</strong> Application time reduced from <strong>~2 weeks</strong> to <strong>~3 days</strong>. Better evidence of community impact. Every claim backed by cited data. Rubric-aligned throughout.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="false" aria-controls="body-wf-curriculum">
+      Workflow 2: Workshop Curriculum Development
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body" id="body-wf-curriculum">
+      <div class="collapsible-content">
+        <p style="font-size:0.85rem;color:var(--color-text-muted);margin-bottom:12px;"><strong>Space used:</strong> "AutoLearner Content" — contains learning objectives, qualification standards, and equipment inventory</p>
+        <ol class="workflow-steps">
+          <li class="workflow-step"><div class="step-number">1</div><div class="step-content"><strong>Map learning objectives</strong>Ask the Space to map your topic to relevant qualification standards (e.g., Level 2 Vehicle Maintenance).</div></li>
+          <li class="workflow-step"><div class="step-number">2</div><div class="step-content"><strong>Generate session structure</strong>Prompt: "Create a 2-hour session plan for teaching brake disc replacement to beginners. Include timing, resources, and assessment activities."</div></li>
+          <li class="workflow-step"><div class="step-number">3</div><div class="step-content"><strong>Write learner handout</strong>Use Comet to create the printed handout with step-by-step instructions, diagrams prompts, and safety checklists.</div></li>
+          <li class="workflow-step"><div class="step-number">4</div><div class="step-content"><strong>Differentiation suggestions</strong>"How would you adapt this session for a learner with dyslexia? For a fast finisher?"</div></li>
+          <li class="workflow-step"><div class="step-number">5</div><div class="step-content"><strong>Generate assessment rubric</strong>"Create a practical assessment rubric for this session aligned to the learning objectives."</div></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="false" aria-controls="body-wf-pcb">
+      Workflow 3: PCB Project Documentation
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body" id="body-wf-pcb">
+      <div class="collapsible-content">
+        <p style="font-size:0.85rem;color:var(--color-text-muted);margin-bottom:12px;"><strong>Space used:</strong> "Electronics Projects" — contains KiCad project notes, datasheets, and known beginner mistakes</p>
+        <ol class="workflow-steps">
+          <li class="workflow-step"><div class="step-number">1</div><div class="step-content"><strong>Generate BOM from description</strong>"Generate a complete BOM for a USB-C powered STM32 dev board with RS485 and CAN bus. Include UK pricing from RS Components."</div></li>
+          <li class="workflow-step"><div class="step-number">2</div><div class="step-content"><strong>Design review checklist</strong>"What are the most common PCB layout mistakes for beginners working with STM32? Create a pre-manufacture checklist."</div></li>
+          <li class="workflow-step"><div class="step-number">3</div><div class="step-content"><strong>Write project README</strong>Use Comet to generate a GitHub README with schematic description, pin assignments, and programming setup instructions.</div></li>
+          <li class="workflow-step"><div class="step-number">4</div><div class="step-content"><strong>Create learner content</strong>"Write a beginner-friendly explanation of how the RS485 transceiver works on this board. Avoid acronyms without explanation."</div></li>
+        </ol>
+        <div class="result-box" style="background:rgba(124,58,237,0.07);border-color:rgba(124,58,237,0.2);">
+          <strong style="color:var(--color-purple);">Bonus:</strong> The Space remembers your previous project's mistakes — so it proactively warns you if it spots the same footprint error you made last time.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="false" aria-controls="body-context-stacking">
+      Context Stacking Strategy
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body" id="body-context-stacking">
+      <div class="collapsible-content">
+        <p style="font-size:0.9rem;color:var(--color-text-secondary);margin-bottom:16px;">"Layer these together for dramatically better outputs"</p>
+        <div class="layer-cards">
+          <div class="layer-card layer-space">
+            <h4>🏠 Space-level</h4>
+            <p style="font-size:0.82rem;color:var(--color-text-secondary);">Project background, tone, audience, uploaded documents. Always active in this Space.</p>
+          </div>
+          <div class="layer-card layer-file">
+            <h4>📄 File-level</h4>
+            <p style="font-size:0.82rem;color:var(--color-text-secondary);">Specific document attached to this conversation — a rubric, a draft, a brief.</p>
+          </div>
+          <div class="layer-card layer-convo">
+            <h4>💬 Conversation-level</h4>
+            <p style="font-size:0.82rem;color:var(--color-text-secondary);">This session's specific instructions — audience, deadline, tone adjustments.</p>
+          </div>
+        </div>
+        <div class="code-block-wrapper">
+          <div class="code-block" id="cb-stacking">// In your Space instructions (always active):
+"You are helping with AutoSpace CIC grant applications..."
+
+// In each conversation (file-level):
+[Attach: Youth Futures scoring rubric PDF]
+[Attach: Draft application v2.docx]
+
+// In your opening message (conversation-level):
+"Today I need to strengthen the Impact section specifically.
+The deadline is Friday. The funder is Youth Futures Foundation.
+Score each paragraph on how well it evidences community benefit (1-5)."</div>
+          <button class="copy-btn" onclick="copyCode('cb-stacking', this)" aria-label="Copy context stacking example">📋 Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="takeaway-box">The workflow is always: Space for context → Comet for creation → Space for review. Layer your context.</div>
+</section>
+
+<!-- ===== SECTION 7: BEST PRACTICES ===== -->
+<section class="section section-practice" id="practice">
+  <h2 class="section-heading">✅ Best Practices <span class="time-badge">⏱️ 10 min</span></h2>
+  <p class="section-intro">What separates great AI results from mediocre ones is almost always the human's approach, not the tool.</p>
+
+  <div class="practice-grid">
+    <div class="practice-card practice-do">
+      <h3>✅ What Works</h3>
+      <ul>
+        <li>Be specific: include audience, format, length, tone in every prompt</li>
+        <li>Iterate: treat first drafts as raw material, not final output</li>
+        <li>Use roles: "Act as a grant reviewer" or "Act as a beginner learner"</li>
+        <li>Layer context: Space + file + conversation instructions together</li>
+        <li>Ask it to critique its own work: "What's weak about this?"</li>
+        <li>Provide examples: "Write it like this example paragraph..."</li>
+      </ul>
+    </div>
+    <div class="practice-card practice-dont">
+      <h3>⚠️ Watch Out For</h3>
+      <ul>
+        <li>Hallucinated statistics — always verify specific numbers from original sources</li>
+        <li>Outdated information — Deep Research helps, but double-check critical facts</li>
+        <li>Generic outputs from vague prompts — garbage in, garbage out</li>
+        <li>Over-relying on first drafts for anything submitted to funders or regulators</li>
+        <li>Losing your authentic voice — edit heavily; it should sound like <em>you</em></li>
+        <li>Sharing sensitive personal data in prompts — treat AI like a public inbox</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="false" aria-controls="body-collab-mindset">
+      The Collaboration Mindset
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body" id="body-collab-mindset">
+      <div class="collapsible-content">
+        <ul class="bullet-list">
+          <li>Think of AI as a very fast, well-read junior colleague — brilliant at research and first drafts, needs your domain expertise and judgement</li>
+          <li>You bring: knowledge of your audience, local context, relationship history, professional judgment</li>
+          <li>AI brings: speed, breadth, patience for repetitive tasks, ability to maintain consistency across long documents</li>
+          <li>The best work happens when you go back and forth — brief it, review it, redirect it, refine it</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="false" aria-controls="body-pitfalls">
+      Common Pitfalls
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body" id="body-pitfalls">
+      <div class="collapsible-content">
+        <div class="warning-box">Pitfall 1: Submitting AI output without editing. Funders and regulators can often tell — and it signals you haven't engaged with your own application.</div>
+        <div class="warning-box">Pitfall 2: Using AI for decisions it shouldn't make. AI can draft a safeguarding policy but a qualified person must review and sign it off.</div>
+        <div class="warning-box">Pitfall 3: Starting a new chat every time. Without a Space, you're losing all accumulated context. Set up Spaces before your next project.</div>
+        <div class="warning-box">Pitfall 4: Trusting statistics without checking. AI will confidently cite numbers that are wrong or outdated. Always trace stats back to primary sources.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="takeaway-box">You are the director. AI is your research assistant and first-draft writer. Always interrogate the output.</div>
+</section>
+
+<!-- ===== SECTION 8: HANDS-ON ===== -->
+<section class="section section-handson" id="handson">
+  <h2 class="section-heading">🛠️ Hands-On Practice <span class="time-badge">⏱️ 30 min</span></h2>
+  <p class="section-intro">Three exercises using your real projects. These aren't demos — you're building something you'll actually use.</p>
+
+  <!-- Exercise 1 -->
+  <div class="exercise-card" id="exercise-1">
+    <div class="exercise-header">
+      <div>
+        <div class="exercise-title">Exercise 1: Create Your First Space</div>
+        <div class="exercise-duration">⏱️ 15 minutes</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="timer-display" id="timer-1" aria-live="polite" aria-label="Timer for exercise 1">15:00</div>
+        <div class="timer-controls">
+          <button class="btn btn-success" onclick="startTimer(1, 15)" aria-label="Start 15-minute timer for exercise 1">▶ Start</button>
+          <button class="btn btn-secondary" onclick="resetTimer(1, 15)" aria-label="Reset timer for exercise 1">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+    <ol class="exercise-steps">
+      <li class="exercise-step"><div class="ex-step-num">1</div><span>Go to <strong>perplexity.ai</strong> → click <strong>Spaces</strong> in the left sidebar → <strong>New Space</strong></span></li>
+      <li class="exercise-step"><div class="ex-step-num">2</div><span>Name it after your most active project (e.g., "My Project Name")</span></li>
+      <li class="exercise-step"><div class="ex-step-num">3</div><span>Write custom instructions using the template from Section 5 — adapt it to your project</span></li>
+      <li class="exercise-step"><div class="ex-step-num">4</div><span>Upload at least one relevant document (a brief, a past report, a template)</span></li>
+      <li class="exercise-step"><div class="ex-step-num">5</div><span>Ask it your first question — something you actually need answered for this project this week</span></li>
+    </ol>
+  </div>
+
+  <!-- Exercise 2 -->
+  <div class="exercise-card" id="exercise-2">
+    <div class="exercise-header">
+      <div>
+        <div class="exercise-title">Exercise 2: Document Creation in Comet</div>
+        <div class="exercise-duration">⏱️ 15 minutes</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="timer-display" id="timer-2" aria-live="polite" aria-label="Timer for exercise 2">15:00</div>
+        <div class="timer-controls">
+          <button class="btn btn-success" onclick="startTimer(2, 15)" aria-label="Start 15-minute timer for exercise 2">▶ Start</button>
+          <button class="btn btn-secondary" onclick="resetTimer(2, 15)" aria-label="Reset timer for exercise 2">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+    <ol class="exercise-steps">
+      <li class="exercise-step"><div class="ex-step-num">1</div><span>Open <strong>Comet</strong> and enable <strong>Deep Research mode</strong> in the sidebar</span></li>
+      <li class="exercise-step"><div class="ex-step-num">2</div><span>Ask it to create a document you genuinely need — a policy, a plan, a session outline, a report section</span></li>
+      <li class="exercise-step"><div class="ex-step-num">3</div><span>Once the first draft is done, ask it to <strong>expand one specific section</strong> with more detail</span></li>
+      <li class="exercise-step"><div class="ex-step-num">4</div><span>Ask it: "What is missing from this document for its intended purpose?"</span></li>
+      <li class="exercise-step"><div class="ex-step-num">5</div><span>Export as DOCX — open it and make at least three manual edits to make it your own</span></li>
+    </ol>
+  </div>
+
+  <!-- Exercise 3 -->
+  <div class="exercise-card" id="exercise-3">
+    <div class="exercise-header">
+      <div>
+        <div class="exercise-title">Exercise 3: Context Stacking</div>
+        <div class="exercise-duration">⏱️ 10 minutes</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="timer-display" id="timer-3" aria-live="polite" aria-label="Timer for exercise 3">10:00</div>
+        <div class="timer-controls">
+          <button class="btn btn-success" onclick="startTimer(3, 10)" aria-label="Start 10-minute timer for exercise 3">▶ Start</button>
+          <button class="btn btn-secondary" onclick="resetTimer(3, 10)" aria-label="Reset timer for exercise 3">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+    <ol class="exercise-steps">
+      <li class="exercise-step"><div class="ex-step-num">1</div><span>Open the Space you created in Exercise 1</span></li>
+      <li class="exercise-step"><div class="ex-step-num">2</div><span>Attach a specific document to the conversation (a rubric, brief, or template)</span></li>
+      <li class="exercise-step"><div class="ex-step-num">3</div><span>Start your message with a specific framing: audience, deadline, or output format requirement</span></li>
+      <li class="exercise-step"><div class="ex-step-num">4</div><span>Compare the output quality to your very first Perplexity prompt today — notice the difference that context makes</span></li>
+    </ol>
+  </div>
+
+  <!-- Discussion -->
+  <div class="collapsible" style="margin-top:8px;">
+    <button class="collapsible-trigger" aria-expanded="false" aria-controls="body-discussion">
+      💬 Group Discussion + Troubleshooting Together
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body" id="body-discussion">
+      <div class="collapsible-content">
+        <p style="font-size:0.9rem;font-weight:600;margin-bottom:12px;">Discussion topics:</p>
+        <ol style="padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:0.9rem;color:var(--color-text-secondary);">
+          <li>What was the biggest surprise from your Exercise 1 Space? What did the AI get right immediately?</li>
+          <li>Where did you have to correct or redirect it — and what does that tell you about how to prompt better?</li>
+          <li>Which of the three workflows (grant / curriculum / PCB) feels most relevant to your work right now?</li>
+          <li>What's one task you do every week that this could automate or accelerate?</li>
+          <li>What concerns do you have — about accuracy, data privacy, or over-reliance — and how might you mitigate them?</li>
+        </ol>
+        <div class="result-box" style="margin-top:16px;">
+          <strong>Troubleshooting Together:</strong> If something didn't work as expected in the exercises, share it now. There's a high chance others hit the same issue — and solving it together is the best learning.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Commitment Card -->
+  <div class="commitment-form">
+    <h3>🤝 Your Commitment Card</h3>
+    <div class="form-row">
+      <label class="form-label" for="commit-text">I commit to trying __________ this week.</label>
+      <input class="form-input" type="text" id="commit-text" placeholder="e.g. setting up a Space for my funding applications" aria-label="Your commitment for this week" />
+    </div>
+    <div class="form-row">
+      <label class="form-label" for="commit-name">Your name (optional)</label>
+      <input class="form-input" type="text" id="commit-name" placeholder="First name or leave blank" aria-label="Your name (optional)" />
+    </div>
+    <button class="btn btn-primary" onclick="generateCommitmentCard()" aria-label="Generate your commitment card">🎯 Generate My Card</button>
+
+    <div class="generated-card" id="generated-commitment-card" aria-live="polite">
+      <div class="generated-card-title">🤝 Workshop Commitment</div>
+      <div class="generated-card-text" id="commitment-card-text"></div>
+      <div class="generated-card-name" id="commitment-card-name"></div>
+      <div class="generated-card-actions">
+        <button class="btn btn-secondary" onclick="copyCommitmentCard()" aria-label="Copy commitment card text">📋 Copy</button>
+        <button class="btn btn-print" onclick="window.print()" aria-label="Print commitment card">🖨️ Print</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="takeaway-box">The best time to try this is right now, on a real task you actually need to do this week.</div>
+</section>
+
+<!-- ===== SECTION 9: CHEAT SHEET ===== -->
+<section class="section section-cheatsheet" id="cheatsheet">
+  <h2 class="section-heading">📋 Cheat Sheet</h2>
+
+  <div class="collapsible" id="coll-cheatsheet">
+    <button class="collapsible-trigger" aria-expanded="false" aria-controls="body-cheatsheet">
+      📋 Open Printable Cheat Sheet
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body" id="body-cheatsheet">
+      <div class="collapsible-content">
+        <div class="cheat-grid">
+
+          <!-- Column 1: Tool Selector -->
+          <div class="cheat-col">
+            <h3>Tool Selector</h3>
+            <ul>
+              <li>Need a researched answer? → <strong>Perplexity</strong></li>
+              <li>Need to write a document? → <strong>Comet</strong></li>
+              <li>Need consistent project context? → <strong>Space</strong></li>
+              <li>Complex analysis or code? → <strong>Claude</strong> in Perplexity</li>
+              <li>Writing or creative copy? → <strong>GPT-5</strong> in Perplexity</li>
+              <li>Quick fact or research? → <strong>Sonar</strong> (default)</li>
+              <li>Deep background research? → <strong>Deep Research</strong> mode</li>
+            </ul>
+          </div>
+
+          <!-- Column 2: Model Guide -->
+          <div class="cheat-col">
+            <h3>Model Guide</h3>
+            <ul>
+              <li><strong>Sonar Large</strong> → Quick research, fact-checking, web Q&A</li>
+              <li><strong>Claude 4.5</strong> → Complex analysis, debugging, long documents</li>
+              <li><strong>GPT-5</strong> → Writing, brainstorming, tone variation</li>
+            </ul>
+            <div style="height:12px;"></div>
+            <div class="cheat-code">Quick?     → Sonar
+Analyse?   → Claude
+Write?     → GPT-5
+Research?  → Deep Research</div>
+          </div>
+
+          <!-- Column 3: Space Template -->
+          <div class="cheat-col">
+            <h3>Space Instructions</h3>
+            <div class="cheat-code">## About This Project
+[Name + purpose]
+
+## Key Context
+- Org type:
+- Audience:
+- Active projects:
+- Key documents:
+
+## Tone & Voice
+[Professional/casual,
+UK English, active voice]
+
+## What I Need
+- [Task type 1]
+- [Task type 2]
+
+## Rules
+- Cite sources
+- Flag legal risks
+- Emphasise impact</div>
+          </div>
+
+          <!-- Column 4: Top 10 Prompts -->
+          <div class="cheat-col">
+            <h3>Top 10 Prompts</h3>
+            <ol class="cheat-top10" style="padding-left:0;list-style:none;counter-reset:prompts;">
+              <li>"Create a [doc type] for [audience] covering [topics]"</li>
+              <li>"Review this against [criteria]. What am I missing?"</li>
+              <li>"Generate BOM with UK pricing from RS Components"</li>
+              <li>"Turn this into 3 social media captions"</li>
+              <li>"What are the most common mistakes beginners make with [topic]?"</li>
+              <li>"Summarise this page and extract action items"</li>
+              <li>"Write 3 variations of this for different audiences"</li>
+              <li>"Add a troubleshooting section for likely issues"</li>
+              <li>"Strengthen the impact section with relevant data"</li>
+              <li>"What similar resources exist? What are we missing?"</li>
+            </ol>
+          </div>
+
+        </div>
+
+        <div style="margin-top:20px;text-align:center;">
+          <button class="btn btn-print" onclick="window.print()" aria-label="Print the cheat sheet">🖨️ Print Cheat Sheet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 10: Q&A ===== -->
+<section class="section section-qa" id="qa">
+  <h2 class="section-heading">❓ Q&amp;A &amp; Next Steps</h2>
+  <p class="section-intro">Common questions, resources to take home, and what to do next.</p>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="true" aria-controls="body-common-qa">
+      Common Questions
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body open" id="body-common-qa">
+      <div class="collapsible-content">
+        <div class="qa-item">
+          <div class="qa-q">Is my data private when I use Perplexity and Comet?</div>
+          <div class="qa-a">Perplexity Pro users can opt out of having their queries used for training. Don't paste sensitive personal data (client names, financial details, safeguarding records) into any AI tool — treat it like a public inbox. Use anonymised or generalised context instead.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How accurate is the output? Can I trust it?</div>
+          <div class="qa-a">Perplexity's cited answers are generally reliable for factual research — always click through to verify statistics and legal claims. Comet documents are good first drafts but need your review. AI is your accelerator, not your final authority.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">What's the difference between Perplexity Pro and the free version?</div>
+          <div class="qa-a">Free gives you Quick Search with limited queries. Pro unlocks unlimited Pro Search, Deep Research mode, model choice (Claude, GPT-5), file uploads, Spaces, and Comet access. For serious work use, Pro is worth it at roughly £17/month.</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">How many Spaces can I create?</div>
+          <div class="qa-a">Perplexity Pro supports multiple Spaces — create one per major project or client. There's no hard limit advertised; in practice, create one for every context you regularly return to.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="collapsible">
+    <button class="collapsible-trigger" aria-expanded="false" aria-controls="body-resources">
+      Resources &amp; Templates
+      <span class="collapsible-icon" aria-hidden="true">▾</span>
+    </button>
+    <div class="collapsible-body" id="body-resources">
+      <div class="collapsible-content">
+        <p style="font-size:0.9rem;font-weight:600;margin-bottom:12px;">Space instructions starter (generic):</p>
+        <div class="code-block-wrapper">
+          <div class="code-block" id="cb-resource-1">## About This Project
+[Describe your project in 2-3 sentences: what it is, who it serves, why it matters]
+
+## Key Context
+- Organisation/team: [name and type]
+- Primary audience: [who will read your outputs]
+- Current focus: [what you're working on right now]
+- Key constraints: [budget, deadlines, regulations, tone requirements]
+
+## Tone & Voice
+[e.g. Professional and accessible. UK English. Active voice. No jargon without explanation.]
+
+## What I Need Help With
+- [List 3-5 recurring task types]
+
+## Important Rules
+- Always cite sources for factual claims
+- Flag anything requiring professional/legal review
+- Use UK English spelling and date formats (DD/MM/YYYY)</div>
+          <button class="copy-btn" onclick="copyCode('cb-resource-1', this)" aria-label="Copy generic Space template">📋 Copy</button>
+        </div>
+
+        <p style="font-size:0.9rem;font-weight:600;margin-bottom:12px;margin-top:20px;">Grant application review prompt:</p>
+        <div class="code-block-wrapper">
+          <div class="code-block" id="cb-resource-2">I'm attaching a draft grant application and the funder's scoring rubric.
+
+Please:
+1. Score each section of my application against the rubric (1-5 with reasoning)
+2. Identify the 3 weakest areas and explain specifically what's missing
+3. Suggest concrete improvements for each weak area
+4. Check that every claim of impact has supporting evidence
+5. Flag any eligibility concerns based on the criteria
+
+Be direct — I need honest feedback, not reassurance.</div>
+          <button class="copy-btn" onclick="copyCode('cb-resource-2', this)" aria-label="Copy grant review prompt">📋 Copy</button>
+        </div>
+
+        <p style="font-size:0.9rem;font-weight:600;margin-bottom:12px;margin-top:20px;">Weekly planning prompt:</p>
+        <div class="code-block-wrapper">
+          <div class="code-block" id="cb-resource-3">It's [day]. Here's what I need to complete this week:
+- [Task 1 with deadline]
+- [Task 2 with deadline]
+- [Task 3 with deadline]
+
+For each task, suggest:
+1. The best AI tool/approach to use (Perplexity research / Comet document / Space review)
+2. A specific opening prompt to get started
+3. Estimated time it should take with AI assistance vs without
+
+Then create a prioritised daily schedule for the week.</div>
+          <button class="copy-btn" onclick="copyCode('cb-resource-3', this)" aria-label="Copy weekly planning prompt">📋 Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Items -->
+  <div class="action-grid" style="margin-top:24px;">
+    <div class="action-card action-everyone">
+      <h3>✅ Everyone — This Week</h3>
+      <ul>
+        <li>Create at least one Space for a real project</li>
+        <li>Use Perplexity for one task you'd normally Google</li>
+        <li>Try Comet to create or improve one document</li>
+        <li>Share what worked (or didn't) with the group</li>
+      </ul>
+    </div>
+    <div class="action-card action-optional">
+      <h3>🚀 Optional Deep Dive</h3>
+      <ul>
+        <li>Set up a Funding Space with your funder criteria documents</li>
+        <li>Run Deep Research on your next grant funder before applying</li>
+        <li>Try the context stacking workflow on a real submission</li>
+        <li>Explore Comet's spreadsheet creation for a recurring reporting task</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="followup-box">
+    <strong>📅 Follow-Up Session</strong>
+    Come back in 2–3 weeks with one real example of how you used these tools. We'll review outputs together, fix what didn't work, and level up your prompts based on actual experience.
+  </div>
+
+  <!-- Feedback Form -->
+  <div class="feedback-section" id="feedback-form-section">
+    <h3>📝 Quick Feedback <span style="font-size:0.85rem;font-weight:400;color:var(--color-text-muted);">(30 seconds)</span></h3>
+    <div class="form-row">
+      <label class="form-label" for="fb-useful">What was most useful?</label>
+      <textarea class="form-textarea" id="fb-useful" placeholder="e.g. the Space setup walkthrough, the model comparison..." aria-label="What was most useful about the workshop"></textarea>
+    </div>
+    <div class="form-row">
+      <label class="form-label" for="fb-unclear">What was unclear?</label>
+      <textarea class="form-textarea" id="fb-unclear" placeholder="e.g. the difference between Comet and Perplexity.ai..." aria-label="What was unclear during the workshop"></textarea>
+    </div>
+    <div class="form-row">
+      <label class="form-label" for="fb-try">What will you try first?</label>
+      <input class="form-input" type="text" id="fb-try" placeholder="e.g. Setting up a funding Space this afternoon" aria-label="What you will try first after the workshop" />
+    </div>
+    <div class="form-row">
+      <label class="form-label" for="fb-name">Your name (optional)</label>
+      <input class="form-input" type="text" id="fb-name" placeholder="First name or leave blank" aria-label="Your name (optional)" />
+    </div>
+    <button class="btn btn-primary" onclick="submitFeedback()" aria-label="Submit your feedback">Submit Feedback</button>
+    <div class="feedback-confirmation" id="feedback-confirmation" aria-live="polite"></div>
+  </div>
+</section>
+
+</div><!-- end .page-wrapper -->
+
+<!-- CONTROL PANEL -->
+<div id="control-panel" role="toolbar" aria-label="Workshop controls">
+  <button class="ctrl-btn" id="btn-dark-mode" onclick="toggleDarkMode()" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+  <button class="ctrl-btn" id="btn-presenter" onclick="togglePresenterMode()" aria-label="Toggle presenter mode" title="Toggle presenter mode">🎬</button>
+  <button class="ctrl-btn" onclick="expandAll()" aria-label="Expand all sections" title="Expand all">+</button>
+  <button class="ctrl-btn" onclick="collapseAll()" aria-label="Collapse all sections" title="Collapse all">−</button>
+  <button class="ctrl-btn" onclick="scrollToTop()" aria-label="Scroll to top" title="Scroll to top">↑</button>
+</div>
+
+<!-- FEEDBACK VIEWER OVERLAY -->
+<div id="feedback-viewer" role="dialog" aria-modal="true" aria-label="Feedback responses">
+  <div class="feedback-table-wrapper">
+    <h2>📊 Workshop Feedback Responses</h2>
+    <div id="feedback-table-content"></div>
+    <div style="margin-top:20px;">
+      <button class="btn btn-secondary" onclick="closeFeedbackViewer()" aria-label="Close feedback viewer">Close</button>
+      <button class="btn btn-secondary" style="margin-left:8px;" onclick="exportFeedbackCSV()" aria-label="Export feedback as CSV">📥 Export CSV</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== UTILITIES =====================
+function $(id) { return document.getElementById(id); }
+
+function copyCode(blockId, btn) {
+  const text = $(blockId).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000);
+  });
+}
+
+// ===================== PROGRESS BAR =====================
+window.addEventListener('scroll', () => {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+  $('progress-bar').style.width = pct + '%';
+}, { passive: true });
+
+// ===================== HEADER HIDE/SHOW =====================
+let lastScrollY = 0;
+const header = $('site-header');
+window.addEventListener('scroll', () => {
+  const current = window.scrollY;
+  if (current > 100 && current > lastScrollY) {
+    header.classList.add('hidden');
+  } else {
+    header.classList.remove('hidden');
+  }
+  lastScrollY = current;
+}, { passive: true });
+
+// ===================== OFFLINE BANNER =====================
+function updateOnlineStatus() {
+  $('offline-banner').style.display = navigator.onLine ? 'none' : 'block';
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+// ===================== DARK MODE =====================
+function applyDarkMode(on) {
+  document.documentElement.setAttribute('data-theme', on ? 'dark' : 'light');
+  $('btn-dark-mode').textContent = on ? '☀️' : '🌙';
+  localStorage.setItem('darkMode', on ? 'true' : 'false');
+}
+function toggleDarkMode() {
+  const current = document.documentElement.getAttribute('data-theme') === 'dark';
+  applyDarkMode(!current);
+}
+(function initDarkMode() {
+  const saved = localStorage.getItem('darkMode');
+  if (saved === 'true') applyDarkMode(true);
+})();
+
+// ===================== PRESENTER MODE =====================
+let presenterMode = false;
+function togglePresenterMode() {
+  presenterMode = !presenterMode;
+  document.body.classList.toggle('presenter-mode', presenterMode);
+  $('btn-presenter').style.background = presenterMode ? 'var(--color-accent)' : '';
+  $('btn-presenter').style.color = presenterMode ? '#fff' : '';
+  if (presenterMode) updateActiveSection();
+}
+
+// ===================== COLLAPSIBLES =====================
+document.querySelectorAll('.collapsible-trigger').forEach(trigger => {
+  trigger.addEventListener('click', () => {
+    const expanded = trigger.getAttribute('aria-expanded') === 'true';
+    const bodyId = trigger.getAttribute('aria-controls');
+    const body = $(bodyId);
+    trigger.setAttribute('aria-expanded', !expanded);
+    if (!expanded) {
+      body.classList.add('open');
+    } else {
+      body.classList.remove('open');
+    }
+  });
+});
+
+// Initialise open collapsibles
+document.querySelectorAll('.collapsible-trigger[aria-expanded="true"]').forEach(trigger => {
+  const bodyId = trigger.getAttribute('aria-controls');
+  if (bodyId) {
+    const body = $(bodyId);
+    if (body) body.classList.add('open');
+  }
+});
+
+function expandAll() {
+  document.querySelectorAll('.collapsible-trigger').forEach(t => {
+    t.setAttribute('aria-expanded', 'true');
+    const b = $(t.getAttribute('aria-controls'));
+    if (b) b.classList.add('open');
+  });
+}
+
+function collapseAll() {
+  document.querySelectorAll('.collapsible-trigger').forEach(t => {
+    t.setAttribute('aria-expanded', 'false');
+    const b = $(t.getAttribute('aria-controls'));
+    if (b) b.classList.remove('open');
+  });
+}
+
+// ===================== SCROLL TO TOP =====================
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ===================== NAV SCROLL SPY =====================
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-link[data-target]');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const active = document.querySelector(`.nav-link[data-target="${entry.target.id}"]`);
+      if (active) {
+        active.classList.add('active');
+        if (presenterMode) updateActiveSection(entry.target.id);
+      }
+    }
+  });
+}, { threshold: 0.2 });
+
+sections.forEach(s => observer.observe(s));
+
+navLinks.forEach(link => {
+  link.addEventListener('click', () => {
+    const target = $(link.dataset.target);
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+function updateActiveSection(id) {
+  const activeId = id || document.querySelector('.nav-link.active')?.dataset.target;
+  sections.forEach(s => {
+    s.classList.toggle('section-active', s.id === activeId);
+  });
+}
+
+// ===================== KEYBOARD NAV =====================
+const sectionIds = Array.from(sections).map(s => s.id);
+function getCurrentSectionIndex() {
+  let closest = 0, minDist = Infinity;
+  sections.forEach((s, i) => {
+    const dist = Math.abs(s.getBoundingClientRect().top);
+    if (dist < minDist) { minDist = dist; closest = i; }
+  });
+  return closest;
+}
+
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = Math.min(getCurrentSectionIndex() + 1, sectionIds.length - 1);
+    $(sectionIds[next])?.scrollIntoView({ behavior: 'smooth' });
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = Math.max(getCurrentSectionIndex() - 1, 0);
+    $(sectionIds[prev])?.scrollIntoView({ behavior: 'smooth' });
+  } else if (e.key === 'Escape') {
+    collapseAll();
+  }
+});
+
+// ===================== CHECKLIST =====================
+(function initChecklist() {
+  const saved = JSON.parse(localStorage.getItem('workshopChecklist') || '{}');
+  document.querySelectorAll('#checklist .checklist-item').forEach(item => {
+    const key = item.dataset.key;
+    const cb = item.querySelector('input[type="checkbox"]');
+    if (saved[key]) {
+      cb.checked = true;
+      item.classList.add('checked');
+    }
+    cb.addEventListener('change', () => {
+      item.classList.toggle('checked', cb.checked);
+      saved[key] = cb.checked;
+      localStorage.setItem('workshopChecklist', JSON.stringify(saved));
+    });
+    item.addEventListener('click', e => {
+      if (e.target !== cb) { cb.click(); }
+    });
+  });
+})();
+
+// ===================== QR CODES =====================
+function generateQR(canvasId, url) {
+  const canvas = $(canvasId);
+  if (!canvas || typeof QRCode === 'undefined') return;
+  QRCode.toCanvas(canvas, url, { width: 160, margin: 1, color: { dark: '#1a1a1a', light: '#ffffff' } }, err => {
+    if (err) console.warn('QR gen error:', err);
+  });
+}
+
+function getBaseUrl() {
+  return window.location.origin || 'https://your-workshop.vercel.app';
+}
+
+window.addEventListener('load', () => {
+  const base = getBaseUrl();
+  generateQR('qr-icebreaker', base + '/poll?q=icebreaker');
+  generateQR('qr-timesink', base + '/poll?q=timesink');
+});
+
+const JSONBIN_KEY = '$2a$10$hGdt81TjCOw.VBkX9ILbNOkyfoaXto.aBxxUpgnAMQ4HHA0Em0lYe';
+const JSONBIN_BIN = '69b5337aaa77b81da9e357be';
+
+async function fetchPollData() {
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}/latest`, {
+      headers: { 'X-Master-Key': JSONBIN_KEY }
+    });
+    const json = await res.json();
+    return json.record;
+  } catch(e) { return null; }
+}
+
+async function updatePollResults(pollId, keys) {
+  const data = await fetchPollData();
+  if (!data) return;
+  const pollData = data['workshopPoll_' + pollId] || {};
+  const total = keys.reduce((sum, k) => sum + (pollData[k] || 0), 0);
+  keys.forEach(k => {
+    const count = pollData[k] || 0;
+    const pct = total > 0 ? (count / total) * 100 : 0;
+    const bar = document.getElementById('bar-' + pollId + '-' + k);
+    const cnt = document.getElementById('count-' + pollId + '-' + k);
+    if (bar) bar.style.width = pct + '%';
+    if (cnt) cnt.textContent = count;
+  });
+}
+
+function startPollPolling() {
+  updatePollResults('icebreaker', ['never', 'occasionally', 'daily']);
+  updatePollResults('timesink', ['writing', 'research', 'reporting', 'planning']);
+  setInterval(() => {
+    updatePollResults('icebreaker', ['never', 'occasionally', 'daily']);
+    updatePollResults('timesink', ['writing', 'research', 'reporting', 'planning']);
+  }, 3000);
+}
+startPollPolling();
+
+// ===================== MODEL SIMULATOR =====================
+const modelResponses = {
+  sonar: `A Bill of Materials (BOM) is a complete list of every part and component needed to build your project. According to the Maker's Guide and RS Components documentation, a basic BOM includes: part name, reference designator, quantity, and supplier part number. Think of it as your shopping list before you order anything — get it right and you'll save yourself multiple trips to the supplier.`,
+  claude: `A Bill of Materials (BOM) is a structured, hierarchical document that exhaustively enumerates every component, sub-assembly, raw material, and quantity required to manufacture a product or complete a project. In electronics design, a BOM typically captures: reference designator (e.g. R1, C3, U2), component description and value, manufacturer part number (MPN), approved alternative MPNs, package/footprint, quantity per assembly, unit cost, and preferred supplier with stock code. In KiCad, you can auto-generate a BOM from your schematic using the built-in BOM export or plugins like KiBoM, which can output CSV files ready for direct import into supplier ordering systems. The BOM serves as the single source of truth through procurement, PCB assembly, testing, and revision control — any change to a component must be reflected here first.`,
+  gpt5: `Imagine you're building a piece of flat-pack furniture — before you even pick up the Allen key, you'd want to check you have every screw, every dowel, every panel. A Bill of Materials is exactly that kind of list, but for your maker project.\n\nIt's your definitive ingredients list: every resistor, every chip, every bolt, every wire. Include part numbers so you can reorder exactly the right thing, quantities so you know how many to buy, and costs so budget surprises don't derail you halfway through a build.\n\nGet your BOM right upfront, and you'll never find yourself halfway through a Saturday build session, realising you're missing the one capacitor that holds the whole thing together.`
+};
+
+function showModelResponse() {
+  const model = $('model-select').value;
+  $('sim-compare').style.display = 'none';
+  $('sim-single').style.display = 'block';
+  const display = $('model-response-display');
+  display.style.opacity = '0';
+  setTimeout(() => {
+    display.textContent = modelResponses[model];
+    display.style.opacity = '1';
+  }, 150);
+}
+
+function showCompare() {
+  $('sim-single').style.display = 'none';
+  $('sim-compare').style.display = 'block';
+}
+
+// ===================== TIMERS =====================
+const timers = {};
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function playBeep(freq, duration) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+
+function startTimer(id, minutes) {
+  if (timers[id]) { clearInterval(timers[id].interval); }
+  let remaining = minutes * 60;
+  const display = $('timer-' + id);
+  const card = $('exercise-' + id);
+
+  card.classList.add('timer-running');
+  card.classList.remove('timer-warning', 'timer-critical');
+
+  timers[id] = {
+    interval: setInterval(() => {
+      remaining--;
+      display.textContent = formatTime(remaining);
+
+      if (remaining === 300) {
+        playBeep(880, 0.5);
+        display.classList.add('warning');
+        card.classList.add('timer-warning');
+        card.classList.remove('timer-running');
+      }
+      if (remaining === 120) {
+        display.classList.add('critical');
+        display.classList.remove('warning');
+        card.classList.add('timer-critical');
+        card.classList.remove('timer-warning');
+      }
+      if (remaining <= 0) {
+        clearInterval(timers[id].interval);
+        display.textContent = '00:00';
+        playBeep(440, 1.5);
+        setTimeout(() => playBeep(440, 1.5), 600);
+        card.classList.remove('timer-running', 'timer-warning', 'timer-critical');
+      }
+    }, 1000)
+  };
+}
+
+function resetTimer(id, minutes) {
+  if (timers[id]) { clearInterval(timers[id].interval); }
+  const display = $('timer-' + id);
+  const card = $('exercise-' + id);
+  display.textContent = formatTime(minutes * 60);
+  display.className = 'timer-display';
+  card.classList.remove('timer-running', 'timer-warning', 'timer-critical');
+}
+
+// ===================== COMMITMENT CARD =====================
+function generateCommitmentCard() {
+  const text = $('commit-text').value.trim();
+  const name = $('commit-name').value.trim();
+  if (!text) {
+    $('commit-text').focus();
+    return;
+  }
+  $('commitment-card-text').textContent = `"I commit to trying ${text} this week."`;
+  $('commitment-card-name').textContent = name ? `— ${name}` : '— Workshop Attendee';
+  const card = $('generated-commitment-card');
+  card.classList.add('visible');
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function copyCommitmentCard() {
+  const text = $('commitment-card-text').textContent + '\n' + $('commitment-card-name').textContent;
+  navigator.clipboard.writeText(text).catch(() => {});
+}
+
+// ===================== FEEDBACK =====================
+function submitFeedback() {
+  const useful = $('fb-useful').value.trim();
+  const unclear = $('fb-unclear').value.trim();
+  const tryFirst = $('fb-try').value.trim();
+  const name = $('fb-name').value.trim();
+
+  const existing = JSON.parse(localStorage.getItem('workshopFeedback') || '[]');
+  existing.push({ name: name || 'Anonymous', useful, unclear, tryFirst, timestamp: new Date().toISOString() });
+  localStorage.setItem('workshopFeedback', JSON.stringify(existing));
+
+  const conf = $('feedback-confirmation');
+  conf.textContent = `✅ Thanks${name ? ' ' + name : ''}! Feedback saved.`;
+  conf.classList.add('visible');
+
+  $('fb-useful').value = '';
+  $('fb-unclear').value = '';
+  $('fb-try').value = '';
+  $('fb-name').value = '';
+
+  setTimeout(() => conf.classList.remove('visible'), 5000);
+}
+
+// ===================== FEEDBACK VIEWER =====================
+(function checkFeedbackViewParam() {
+  if (window.location.search.includes('viewfeedback=true')) {
+    openFeedbackViewer();
+  }
+})();
+
+function openFeedbackViewer() {
+  const responses = JSON.parse(localStorage.getItem('workshopFeedback') || '[]');
+  const viewer = $('feedback-viewer');
+  const content = $('feedback-table-content');
+
+  if (responses.length === 0) {
+    content.innerHTML = '<p style="color:var(--color-text-muted);padding:20px 0;">No feedback submitted yet.</p>';
+  } else {
+    let html = '<table><thead><tr><th>#</th><th>Name</th><th>Most Useful</th><th>Unclear</th><th>Will Try</th><th>Time</th></tr></thead><tbody>';
+    responses.forEach((r, i) => {
+      html += `<tr>
+        <td>${i + 1}</td>
+        <td>${escapeHtml(r.name)}</td>
+        <td>${escapeHtml(r.useful || '—')}</td>
+        <td>${escapeHtml(r.unclear || '—')}</td>
+        <td>${escapeHtml(r.tryFirst || '—')}</td>
+        <td>${new Date(r.timestamp).toLocaleString('en-GB')}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    content.innerHTML = html;
+  }
+  viewer.classList.add('visible');
+}
+
+function closeFeedbackViewer() {
+  $('feedback-viewer').classList.remove('visible');
+  if (window.location.search.includes('viewfeedback=true')) {
+    history.replaceState(null, '', window.location.pathname);
+  }
+}
+
+function exportFeedbackCSV() {
+  const responses = JSON.parse(localStorage.getItem('workshopFeedback') || '[]');
+  if (!responses.length) return;
+  const headers = ['Name', 'Most Useful', 'Unclear', 'Will Try', 'Timestamp'];
+  const rows = responses.map(r => [r.name, r.useful, r.unclear, r.tryFirst, r.timestamp].map(v => `"${(v||'').replace(/"/g, '""')}"`));
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'workshop-feedback.csv';
+  a.click();
+}
+
+function escapeHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
