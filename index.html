@@ -2327,7 +2327,7 @@ function createCarousels() {
       // Add QR
       const qrWrapper = document.createElement('div');
       qrWrapper.className = 'qr-canvas-wrapper';
-      qrWrapper.innerHTML = `<div id="qr-${parentId}" aria-label="QR code to vote on ${parentId} polls"></div><span class="qr-label">Scan to vote on all polls</span>`;
+      qrWrapper.innerHTML = `<canvas id="qr-${parentId}" aria-label="QR code to vote on ${parentId} polls"></canvas><span class="qr-label">Scan to vote on all polls</span>`;
       carousel.appendChild(qrWrapper);
       generateQRForParent(parentId);
 
@@ -2340,7 +2340,7 @@ function createCarousels() {
       // Single poll, add QR
       const qrWrapper = document.createElement('div');
       qrWrapper.className = 'qr-canvas-wrapper';
-      qrWrapper.innerHTML = `<div id="qr-${parentId}" aria-label="QR code to vote on ${parentId} poll"></div><span class="qr-label">Scan to vote on your phone</span>`;
+      qrWrapper.innerHTML = `<canvas id="qr-${parentId}" aria-label="QR code to vote on ${parentId} poll"></canvas><span class="qr-label">Scan to vote on your phone</span>`;
       polls[0].appendChild(qrWrapper);
       generateQRForParent(parentId);
     }
