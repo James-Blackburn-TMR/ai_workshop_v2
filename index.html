@@ -2372,7 +2372,6 @@ async function fetchPollData() {
   try {
     const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}/latest`);
     const json = await res.json();
-    console.log('Fetched poll data:', json.record);
     return json.record;
   } catch(e) {
     console.error('Failed to fetch poll data:', e);
