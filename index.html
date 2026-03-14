@@ -2234,7 +2234,9 @@ const JSONBIN_BIN = '69b5337aaa77b81da9e357be';
 
 async function fetchPollData() {
   try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}/latest`);
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}/latest`, {
+      headers: { 'X-Master-Key': JSONBIN_KEY }
+    });
     const json = await res.json();
     console.log('Fetched poll data:', json.record);
     return json.record;
