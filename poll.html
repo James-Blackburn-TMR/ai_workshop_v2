@@ -192,19 +192,44 @@ function getParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
+const parentId = getParam('parent');
 const pollId = getParam('poll') || 'icebreaker';
+
+let currentPollIndex = 0;
+let polls = [];
 
 (async () => {
   const data = await fetchPollData();
-  const pollData = data[`workshopPoll_${pollId}`];
-  if (!pollData) {
-    document.getElementById('poll-question').textContent = 'Poll not found';
-    return;
+  if (parentId) {
+    // Load all polls for the parent
+    polls = Object.keys(data).filter(key => key.startsWith('workshopPoll_') && data[key].parent === parentId).map(key => ({
+      id: key.replace('workshopPoll_', ''),
+      data: data[key]
+    }));
+    if (polls.length === 0) {
+      document.getElementById('poll-question').textContent = 'No polls found for this parent';
+      return;
+    }
+    showPoll(currentPollIndex);
+  } else {
+    // Single poll
+    const pollData = data[`workshopPoll_${pollId}`];
+    if (!pollData) {
+      document.getElementById('poll-question').textContent = 'Poll not found';
+      return;
+    }
+    polls = [{ id: pollId, data: pollData }];
+    showPoll(0);
   }
-  const question = pollData.question || 'Poll';
+})();
+
+function showPoll(index) {
+  const poll = polls[index];
+  const question = poll.data.question || 'Poll';
   document.getElementById('poll-question').textContent = question;
-  const options = pollData.options ? Object.keys(pollData.options) : Object.keys(pollData);
+  const options = poll.data.options ? Object.keys(poll.data.options) : Object.keys(poll.data);
   const optionsList = document.getElementById('options-list');
+  optionsList.innerHTML = '';
   const btnClasses = ['btn-blue', 'btn-green', 'btn-purple', 'btn-pink', 'btn-orange', 'btn-teal'];
   options.forEach((opt, i) => {
     const btn = document.createElement('button');
@@ -214,11 +239,26 @@ const pollId = getParam('poll') || 'icebreaker';
     btn.setAttribute('aria-label', 'Vote for: ' + opt);
     btn.addEventListener('click', () => {
       btn.disabled = true;
-      castVote(opt, opt.charAt(0).toUpperCase() + opt.slice(1));
+      castVoteForPoll(poll.id, opt, opt.charAt(0).toUpperCase() + opt.slice(1), index);
     });
     optionsList.appendChild(btn);
   });
-})();
+}
+
+function castVoteForPoll(pollId, key, label, index) {
+  castVote(pollId, key, label).then(success => {
+    if (success) {
+      if (parentId && index < polls.length - 1) {
+        currentPollIndex++;
+        showPoll(currentPollIndex);
+      } else {
+        const name = document.getElementById('nickname-input').value.trim();
+        showThankYou(name, label);
+        fireConfetti();
+      }
+    }
+  });
+}
 
 const JSONBIN_KEY = '$2a$10$1EqKTRcr.19M6BuFq5AdP.Fz7oLxGWxaeI7s75rettOLqBRUeXwr2';
 const JSONBIN_BIN = '69b547d4aa77b81da9e3943d';
@@ -231,7 +271,7 @@ async function fetchPollData() {
   } catch(e) { return {}; }
 }
 
-async function castVote(key, label) {
+async function castVote(pollId, key, label) {
   try {
     const current = await fetchPollData();
     console.log('Current data before vote:', current);
@@ -250,17 +290,18 @@ async function castVote(key, label) {
     console.log('PUT response status:', putRes.status);
     if (putRes.ok) {
       const name = document.getElementById('nickname-input').value.trim();
-      showThankYou(name, label);
-      fireConfetti();
+      return true;
     } else {
       console.error('PUT failed:', await putRes.text());
       // Re-enable buttons
       document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = false);
+      return false;
     }
   } catch(e) {
     console.error('Vote failed:', e);
     // Re-enable buttons on error
     document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = false);
+    return false;
   }
 }
 

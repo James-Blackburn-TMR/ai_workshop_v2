@@ -18,8 +18,10 @@
   </style>
 </head>
 <body>
-  <h1>Add New Poll Question</h1>
-  <form id="add-poll-form">
+    <div class="form-group">
+      <label for="parent">Parent Poll Group (e.g., ai-workshop):</label>
+      <input type="text" id="parent" required placeholder="ai-workshop">
+    </div>
     <div class="form-group">
       <label for="poll-id">Poll ID (unique identifier, e.g., workshopPoll_feedback):</label>
       <input type="text" id="poll-id" required placeholder="workshopPoll_">
@@ -60,6 +62,7 @@
 
     document.getElementById('add-poll-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const parent = document.getElementById('parent').value;
       const pollId = document.getElementById('poll-id').value;
       const question = document.getElementById('question').value;
       const options = Array.from(document.querySelectorAll('#options-container input')).map(input => input.value);
@@ -76,8 +79,14 @@
         const currentData = json.record || {};
 
         // Add new poll
-        const pollData = {};
-      options.forEach(opt => pollData[opt] = 0);
+        const pollData = {
+          question: question,
+          options: {},
+          parent: parent
+        };
+        options.forEach(opt => pollData.options[opt] = 0);
+        currentData[pollId] = pollData;
+
         // Update bin
         const updateRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN}`, {
           method: 'PUT',

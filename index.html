@@ -548,6 +548,65 @@ input, textarea, select { font-family: var(--font); }
 }
 .poll-bar-count { width: 32px; text-align: right; color: var(--color-text-muted); font-size: 0.8rem; }
 
+/* ===================== CAROUSEL ===================== */
+.carousel-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,0.8);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+[data-theme="dark"] .carousel-container { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); }
+.carousel-wrapper {
+  display: flex;
+  transition: transform 0.3s ease;
+}
+.carousel-slide {
+  min-width: 100%;
+  box-sizing: border-box;
+  padding: 24px;
+}
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: var(--color-text-primary);
+  z-index: 10;
+}
+[data-theme="dark"] .carousel-nav { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.1); }
+.carousel-nav:hover { background: rgba(255,255,255,1); }
+[data-theme="dark"] .carousel-nav:hover { background: rgba(255,255,255,0.2); }
+.carousel-prev { left: 10px; }
+.carousel-next { right: 10px; }
+.carousel-indicators {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+.carousel-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.3);
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.carousel-indicator.active { background: var(--color-accent); }
+
 /* ===================== MODEL SIMULATOR ===================== */
 .model-sim {
   background: rgba(255,255,255,0.7);
@@ -1033,12 +1092,8 @@ ul.bullet-list li { line-height: 1.5; }
     </li>
   </ul>
 
-  <div class="poll-container" id="poll-icebreaker-container">
+  <div class="poll-container" id="poll-icebreaker-container" data-parent="ai-workshop">
     <div class="poll-question">🗳️ How much AI do you currently use?</div>
-    <div class="qr-canvas-wrapper">
-      <div id="qr-icebreaker" aria-label="QR code to vote on icebreaker poll"></div>
-      <span class="qr-label">Scan to vote on your phone</span>
-    </div>
     <div class="poll-results" id="results-icebreaker" aria-live="polite" aria-label="Live poll results">
       <div class="poll-bar-row">
         <span class="poll-bar-label">🙈 Never</span>
@@ -1405,12 +1460,8 @@ Professional but accessible. Avoid jargon. Write as if explaining to an intellig
   </div>
 
   <!-- Poll 2 -->
-  <div class="poll-container" id="poll-timesink-container">
+  <div class="poll-container" id="poll-timesink-container" data-parent="ai-workshop">
     <div class="poll-question">🗳️ Which of these tasks takes most of your time?</div>
-    <div class="qr-canvas-wrapper">
-      <div id="qr-timesink" aria-label="QR code to vote on time sink poll"></div>
-      <span class="qr-label">Scan to vote on your phone</span>
-    </div>
     <div class="poll-results" id="results-timesink" aria-live="polite">
       <div class="poll-bar-row">
         <span class="poll-bar-label">📝 Writing</span>
@@ -2223,9 +2274,93 @@ function getBaseUrl() {
   return window.location.origin || 'https://your-workshop.vercel.app';
 }
 
+function createCarousels() {
+  const parents = {};
+  document.querySelectorAll('.poll-container[data-parent]').forEach(container => {
+    const parent = container.getAttribute('data-parent');
+    if (!parents[parent]) parents[parent] = [];
+    parents[parent].push(container);
+  });
+
+  Object.keys(parents).forEach(parentId => {
+    const polls = parents[parentId];
+    if (polls.length > 1) {
+      // Create carousel
+      const carousel = document.createElement('div');
+      carousel.className = 'carousel-container';
+      carousel.id = `carousel-${parentId}`;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'carousel-wrapper';
+      polls.forEach(poll => {
+        const slide = document.createElement('div');
+        slide.className = 'carousel-slide';
+        slide.appendChild(poll);
+        wrapper.appendChild(slide);
+      });
+      carousel.appendChild(wrapper);
+
+      // Add nav
+      const prev = document.createElement('button');
+      prev.className = 'carousel-nav carousel-prev';
+      prev.innerHTML = '‹';
+      prev.onclick = () => moveCarousel(parentId, -1);
+      carousel.appendChild(prev);
+
+      const next = document.createElement('button');
+      next.className = 'carousel-nav carousel-next';
+      next.innerHTML = '›';
+      next.onclick = () => moveCarousel(parentId, 1);
+      carousel.appendChild(next);
+
+      // Add indicators
+      const indicators = document.createElement('div');
+      indicators.className = 'carousel-indicators';
+      for (let i = 0; i < polls.length; i++) {
+        const ind = document.createElement('div');
+        ind.className = 'carousel-indicator';
+        if (i === 0) ind.classList.add('active');
+        ind.onclick = () => goToSlide(parentId, i);
+        indicators.appendChild(ind);
+      }
+      carousel.appendChild(indicators);
+
+      // Add QR
+      const qrWrapper = document.createElement('div');
+      qrWrapper.className = 'qr-canvas-wrapper';
+      qrWrapper.innerHTML = `<div id="qr-${parentId}" aria-label="QR code to vote on ${parentId} polls"></div><span class="qr-label">Scan to vote on all polls</span>`;
+      carousel.appendChild(qrWrapper);
+
+      // Replace the first poll with the carousel
+      polls[0].parentNode.replaceChild(carousel, polls[0]);
+    } else {
+      // Single poll, add QR
+      const qrWrapper = document.createElement('div');
+      qrWrapper.className = 'qr-canvas-wrapper';
+      qrWrapper.innerHTML = `<div id="qr-${parentId}" aria-label="QR code to vote on ${parentId} poll"></div><span class="qr-label">Scan to vote on your phone</span>`;
+      polls[0].appendChild(qrWrapper);
+    }
+  });
+}
+
+function moveCarousel(parentId, direction) {
+  const wrapper = document.querySelector(`#carousel-${parentId} .carousel-wrapper`);
+  const slides = wrapper.children;
+  const indicators = document.querySelectorAll(`#carousel-${parentId} .carousel-indicator`);
+  let current = Array.from(indicators).findIndex(ind => ind.classList.contains('active'));
+  current = (current + direction + slides.length) % slides.length;
+  goToSlide(parentId, current);
+}
+
+function goToSlide(parentId, index) {
+  const wrapper = document.querySelector(`#carousel-${parentId} .carousel-wrapper`);
+  wrapper.style.transform = `translateX(-${index * 100}%)`;
+  const indicators = document.querySelectorAll(`#carousel-${parentId} .carousel-indicator`);
+  indicators.forEach((ind, i) => ind.classList.toggle('active', i === index));
+}
+
 window.addEventListener('load', () => {
-  generateQRForPoll('icebreaker');
-  generateQRForPoll('timesink');
+  createCarousels();
+  generateQRForParent('ai-workshop');
 });
 
 const JSONBIN_KEY = '$2a$10$1EqKTRcr.19M6BuFq5AdP.Fz7oLxGWxaeI7s75rettOLqBRUeXwr2';
@@ -2259,10 +2394,6 @@ function generatePollHTML(pollId, question, options) {
   `;}).join('');
   container.innerHTML = `
     <div class="poll-question">🗳️ ${question}</div>
-    <div class="qr-canvas-wrapper">
-      <div id="qr-${pollId}" aria-label="QR code to vote on ${pollId} poll"></div>
-      <span class="qr-label">Scan to vote on your phone</span>
-    </div>
     <div class="poll-results" id="results-${pollId}" aria-live="polite" aria-label="Live poll results">
       ${optionsHTML}
     </div>
@@ -2295,6 +2426,7 @@ function startPollPolling() {
   fetchPollData().then(data => {
     if (!data) return;
     const knownPolls = ['icebreaker', 'timesink'];
+    const parentsGenerated = new Set();
     Object.keys(data).forEach(pollKey => {
       if (pollKey.startsWith('workshopPoll_')) {
         const pollId = pollKey.replace('workshopPoll_', '');
@@ -2302,12 +2434,18 @@ function startPollPolling() {
         if (!knownPolls.includes(pollId)) {
           const options = pollData.options ? Object.keys(pollData.options) : Object.keys(pollData);
           const container = generatePollHTML(pollId, pollData.question || 'New Poll', options);
+          container.setAttribute('data-parent', pollData.parent || 'ai-workshop');
           document.getElementById('additional-polls-container').appendChild(container);
         }
         updatePollResults(pollId, pollData);
-        generateQRForPoll(pollId);
+        const parent = pollData.parent || 'ai-workshop';
+        if (!parentsGenerated.has(parent)) {
+          generateQRForParent(parent);
+          parentsGenerated.add(parent);
+        }
       }
     });
+    createCarousels();
   });
   setInterval(() => {
     fetchPollData().then(data => {
@@ -2322,8 +2460,8 @@ function startPollPolling() {
   }, 5000);
 }
 
-function generateQRForPoll(pollId) {
-  generateQR(`qr-${pollId}`, getBaseUrl() + `/poll.html?poll=${pollId}`);
+function generateQRForParent(parentId) {
+  generateQR(`qr-${parentId}`, getBaseUrl() + `/poll.html?parent=${parentId}`);
 }
 startPollPolling();
 
