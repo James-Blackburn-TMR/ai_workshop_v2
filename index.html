@@ -2336,13 +2336,14 @@ function createCarousels() {
       for (let i = 1; i < polls.length; i++) {
         polls[i].remove();
       }
+    } else {
       // Single poll, add QR
       const qrWrapper = document.createElement('div');
       qrWrapper.className = 'qr-canvas-wrapper';
       qrWrapper.innerHTML = `<div id="qr-${parentId}" aria-label="QR code to vote on ${parentId} poll"></div><span class="qr-label">Scan to vote on your phone</span>`;
       polls[0].appendChild(qrWrapper);
       generateQRForParent(parentId);
-  });
+    }
 }
 
 function moveCarousel(parentId, direction) {
