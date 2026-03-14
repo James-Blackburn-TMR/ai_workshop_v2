@@ -2057,6 +2057,9 @@ Then create a prioritised daily schedule for the week.</div>
 </div>
 
 <script>
+// ===================== DEBUG: Confirm JS is running =====================
+alert('Workshop JS loaded');
+console.log('Workshop JS loaded');
 // ===================== UTILITIES =====================
 function $(id) { return document.getElementById(id); }
 
@@ -2265,15 +2268,20 @@ function generateQR(canvasId, url) {
     return;
   }
   el.innerHTML = '';
-  // new QRCode(el, {
-  //   text: url,
-  //   width: 160,
-  //   height: 160,
-  //   colorDark: '#1a1a1a',
-  //   colorLight: '#ffffff',
-  //   correctLevel: QRCode.CorrectLevel.M
-  // });
-  console.log('QR generation commented out for ' + canvasId);
+  if (typeof QRCode === 'undefined') {
+    console.error('QRCode library is missing!');
+    el.innerHTML = '<span style="color:red">QR library missing</span>';
+    return;
+  }
+  new QRCode(el, {
+    text: url,
+    width: 160,
+    height: 160,
+    colorDark: '#1a1a1a',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+  console.log('QR generated for ' + canvasId);
 }
 
 function getBaseUrl() {
