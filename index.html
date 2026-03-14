@@ -2329,16 +2329,16 @@ function createCarousels() {
       qrWrapper.className = 'qr-canvas-wrapper';
       qrWrapper.innerHTML = `<div id="qr-${parentId}" aria-label="QR code to vote on ${parentId} polls"></div><span class="qr-label">Scan to vote on all polls</span>`;
       carousel.appendChild(qrWrapper);
+      generateQRForParent(parentId);
 
       // Replace the first poll with the carousel
       polls[0].parentNode.replaceChild(carousel, polls[0]);
-    } else {
       // Single poll, add QR
       const qrWrapper = document.createElement('div');
       qrWrapper.className = 'qr-canvas-wrapper';
       qrWrapper.innerHTML = `<div id="qr-${parentId}" aria-label="QR code to vote on ${parentId} poll"></div><span class="qr-label">Scan to vote on your phone</span>`;
       polls[0].appendChild(qrWrapper);
-    }
+      generateQRForParent(parentId);
   });
 }
 
@@ -2359,8 +2359,7 @@ function goToSlide(parentId, index) {
 }
 
 window.addEventListener('load', () => {
-  createCarousels();
-  generateQRForParent('ai-workshop');
+  // createCarousels(); // moved to after polling
 });
 
 const JSONBIN_KEY = '$2a$10$1EqKTRcr.19M6BuFq5AdP.Fz7oLxGWxaeI7s75rettOLqBRUeXwr2';
@@ -2423,10 +2422,10 @@ async function updatePollResults(pollId, pollData) {
 }
 
 function startPollPolling() {
+  // generateQRForParent('ai-workshop'); // now in createCarousels
   fetchPollData().then(data => {
     if (!data) return;
     const knownPolls = ['icebreaker', 'timesink'];
-    const parentsGenerated = new Set();
     Object.keys(data).forEach(pollKey => {
       if (pollKey.startsWith('workshopPoll_')) {
         const pollId = pollKey.replace('workshopPoll_', '');
@@ -2438,11 +2437,6 @@ function startPollPolling() {
           document.getElementById('additional-polls-container').appendChild(container);
         }
         updatePollResults(pollId, pollData);
-        const parent = pollData.parent || 'ai-workshop';
-        if (!parentsGenerated.has(parent)) {
-          generateQRForParent(parent);
-          parentsGenerated.add(parent);
-        }
       }
     });
     createCarousels();
